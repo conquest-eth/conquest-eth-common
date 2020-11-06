@@ -31,7 +31,7 @@ export type SpaceInfo = {
   getPlanetInfo(x: number, y: number): PlanetInfo | undefined;
 };
 
-export type Planet = PlanetInfo & {
+export type PlanetUpdatableData = {
   owner: string;
   lastOwnershipTime: number;
   numSpaceships: number;
@@ -39,6 +39,8 @@ export type Planet = PlanetInfo & {
   productionRate: number;
   stake: BigNumber;
 };
+
+export type Planet = PlanetInfo & PlanetUpdatableData;
 
 export type Space = {
   getPlanet(x: number, y: number): Planet | undefined;
@@ -57,4 +59,10 @@ export type PrivateSpace = Space & {
   getFleets(): Fleet[];
   getFleetsFrom(x: number, y: number): Fleet[];
   getFleetsTo(x: number, y: number): Fleet[];
+  player: string | undefined;
+};
+
+export type StateAdapter = {
+  // onPlanetUpdate: (func: (planet: PlanetUpdatableData) => void) => void;
+  getPlanetUpdatableData(x: number, y: number): PlanetUpdatableData;
 };

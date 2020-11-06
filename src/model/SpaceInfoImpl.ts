@@ -1,4 +1,4 @@
-import type {PlanetInfo} from '../types';
+import type {PlanetInfo, SpaceInfo} from '../types';
 import {Random} from '../util/Random';
 import {
   LocationPointer,
@@ -7,7 +7,7 @@ import {
   xyToLocation,
 } from '../util/location';
 
-export class SpaceInfoImpl {
+export class SpaceInfoImpl implements SpaceInfo {
   private genesis: Random;
   private cache: {[id: string]: PlanetInfo | null};
 
