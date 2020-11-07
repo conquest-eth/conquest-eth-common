@@ -33,14 +33,14 @@ export type SpaceInfo = {
 
 export type PlanetUpdatableData = {
   owner: string;
-  lastOwnershipTime: number;
+  lastOwnershipTime: string; // TODO BigNumber
   numSpaceships: number;
-  lastUpdated: number;
+  lastUpdated: string; // TODO BigNumber
   productionRate: number;
-  stake: BigNumber;
+  stake: string; // TODO BigNumber
 };
 
-export type Planet = PlanetInfo & PlanetUpdatableData;
+export type Planet = PlanetInfo & {state?: PlanetUpdatableData};
 
 export type Space = {
   getPlanet(x: number, y: number): Planet | undefined;

@@ -41,6 +41,40 @@ export function xyToLocation(x: number, y: number): string {
   return location;
 }
 
+export function zoneFromLocation(locationX: number, locationY: number): string {
+  const absX = Math.abs(locationX);
+  const signX = locationX < -32 ? -1 : 1;
+  const centerZoneX = signX * Math.floor((absX + 32) / 64);
+  const absY = Math.abs(locationY);
+  const signY = locationY < -32 ? -1 : 1;
+  const centerZoneY = signY * Math.floor((absY + 32) / 64);
+  return xyToLocation(centerZoneX, centerZoneY);
+}
+
+export function zonesFromLocation(
+  locationX: number,
+  locationY: number
+): string[] {
+  const absX = Math.abs(locationX);
+  const signX = locationX < -32 ? -1 : 1;
+  const centerZoneX = signX * Math.floor((absX + 32) / 64);
+  const absY = Math.abs(locationY);
+  const signY = locationY < -32 ? -1 : 1;
+  const centerZoneY = signY * Math.floor((absY + 32) / 64);
+
+  return [
+    xyToLocation(centerZoneX, centerZoneY),
+    xyToLocation(centerZoneX + 1, centerZoneY),
+    xyToLocation(centerZoneX - 1, centerZoneY),
+    xyToLocation(centerZoneX + 1, centerZoneY + 1),
+    xyToLocation(centerZoneX - 1, centerZoneY + 1),
+    xyToLocation(centerZoneX + 1, centerZoneY - 1),
+    xyToLocation(centerZoneX - 1, centerZoneY - 1),
+    xyToLocation(centerZoneX, centerZoneY + 1),
+    xyToLocation(centerZoneX, centerZoneY - 1),
+  ];
+}
+
 export type StrictLocationPointer<T> = {
   index: number;
   x: number;

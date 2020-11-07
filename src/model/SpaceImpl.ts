@@ -14,7 +14,7 @@ export class SpaceImpl implements Space {
       );
       return {
         ...planetInfo,
-        ...planetUpdatableData, // TODO use values:
+        state: planetUpdatableData,
       };
     } else {
       return undefined;
