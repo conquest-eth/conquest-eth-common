@@ -40,7 +40,7 @@ export type PlanetUpdatableData = {
   stake: string; // TODO BigNumber
 };
 
-export type Planet = PlanetInfo & {state?: PlanetUpdatableData};
+export type Planet = PlanetInfo & {state?: PlanetUpdatableData, loaded: boolean};
 
 export type Space = {
   getPlanet(x: number, y: number): Planet | undefined;
@@ -65,4 +65,5 @@ export type PrivateSpace = Space & {
 export type StateAdapter = {
   // onPlanetUpdate: (func: (planet: PlanetUpdatableData) => void) => void;
   getPlanetUpdatableData(x: number, y: number): PlanetUpdatableData;
+  isPlanetLoaded(x: number, y: number): boolean;
 };

@@ -15,6 +15,7 @@ export class SpaceImpl implements Space {
       return {
         ...planetInfo,
         state: planetUpdatableData,
+        loaded: this.stateAdapter.isPlanetLoaded(x, y),
       };
     } else {
       return undefined;

@@ -3,6 +3,9 @@ import {PlanetUpdatableData, StateAdapter} from '../types';
 
 export class StateAdapterFromContract implements StateAdapter {
   constructor(private contract: any) {}
+  isPlanetLoaded(x: number, y: number): boolean {
+    return true;
+  }
   getPlanetUpdatableData(x: number, y: number): PlanetUpdatableData {
     // TODO get from contract
     return {
