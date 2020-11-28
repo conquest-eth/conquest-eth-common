@@ -1,4 +1,4 @@
-import type {BigNumber} from '@ethersproject/bignumber';
+// import type {BigNumber} from '@ethersproject/bignumber';
 
 export type PlanetLocation = {
   id: string;
@@ -42,23 +42,29 @@ export type PlanetUpdatableData = {
 
 export type Planet = PlanetInfo & {state?: PlanetUpdatableData, loaded: boolean};
 
+export type Position = {x: number; y: number};
+
 export type Space = {
   getPlanet(x: number, y: number): Planet | undefined;
 };
 
 export type Fleet = {
+  from: Position;
+  fleetAmount: number;
   launchTime: number;
   owner: string;
-  from: string;
-  to: string;
-  toHash: string;
-  quantity: number;
+};
+
+export type OwnFleet = Fleet & {
+  to: Position;
+  resolveTxHash?: string;
+  sendTxHash?: string;
 };
 
 export type PrivateSpace = Space & {
-  getFleets(): Fleet[];
-  getFleetsFrom(x: number, y: number): Fleet[];
-  getFleetsTo(x: number, y: number): Fleet[];
+  getOwnFleets(): OwnFleet[];
+  // getFleetsFrom(x: number, y: number): Fleet[];
+  // getFleetsTo(x: number, y: number): Fleet[];
   player: string | undefined;
 };
 

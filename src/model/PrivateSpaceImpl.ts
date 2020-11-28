@@ -1,23 +1,22 @@
-import {Fleet, Planet, PrivateSpace, Space} from '../types';
+import {OwnFleet, Planet, PrivateSpace, Space} from '../types';
 
 export class PrivateSpaceImpl implements PrivateSpace {
-  public player: string | undefined;
-  constructor(private space: Space, private walletStore: any) {
-    walletStore.subscribe((data: any) => {
-      this.player = data.address;
-      // TODO destroy ?
-    });
+
+  constructor(private space: Space, private privateAccount: {walletAddress: string; getFleets(): OwnFleet[]}) {
+  }
+  get player(): string | undefined {
+    return this.privateAccount.walletAddress;
   }
   getPlanet(x: number, y: number): Planet | undefined {
     return this.space.getPlanet(x, y);
   }
-  getFleets(): Fleet[] {
-    return [];
+  getOwnFleets(): OwnFleet[] {
+    return this.privateAccount.getFleets();
   }
-  getFleetsFrom(x: number, y: number): Fleet[] {
-    return [];
-  }
-  getFleetsTo(x: number, y: number): Fleet[] {
-    return [];
-  }
+  // getFleetsFrom(x: number, y: number): Fleet[] {
+  //   return []; // TODO filter getFleets()
+  // }
+  // getFleetsTo(x: number, y: number): Fleet[] {
+  //   return []; // TODO filter getFleets()
+  // }
 }
