@@ -13,8 +13,6 @@ export class StateAdapterFromContract implements StateAdapter {
       lastOwnershipTime: '0',
       lastUpdated: '0',
       numSpaceships: 0,
-      productionRate: 0,
-      stake: '0', // BigNumber.from(0),
     };
   }
 }

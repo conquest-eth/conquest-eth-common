@@ -1,13 +1,15 @@
 // import type {BigNumber} from '@ethersproject/bignumber';
 
+import { BigNumber } from "@ethersproject/bignumber";
+
 export type PlanetLocation = {
   id: string;
   x: number;
-  y: number;
+  y: number; // TODO bring back globalX, globalY
 };
 
 export type Statistics = {
-  maxStake: number;
+  stake: number;
   production: number;
   attack: number;
   defense: number;
@@ -27,11 +29,9 @@ export type SpaceInfo = {
 
 export type PlanetUpdatableData = {
   owner: string;
-  lastOwnershipTime: string; // TODO BigNumber
-  numSpaceships: number;
-  lastUpdated: string; // TODO BigNumber
-  productionRate: number;
-  stake: string; // TODO BigNumber
+  lastOwnershipTime: BigNumber;
+  numSpaceships: BigNumber;
+  lastUpdated: BigNumber;
 };
 
 export type Planet = PlanetInfo & {state?: PlanetUpdatableData, loaded: boolean};

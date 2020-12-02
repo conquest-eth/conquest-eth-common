@@ -34,7 +34,7 @@ export class SpaceInfoImpl implements SpaceInfo {
       return undefined;
     }
 
-    const maxStake = _genesis.r_normalFrom(
+    const stake = _genesis.r_normalFrom(
       location,
       4,
       '0x0001000200030004000500070009000A000A000C000F00140019001E00320064'
@@ -55,11 +55,11 @@ export class SpaceInfoImpl implements SpaceInfo {
       location: {
         id: location,
         x,
-        y
+        y,
       },
       type,
       stats: {
-        maxStake,
+        stake,
         production,
         attack,
         defense,
