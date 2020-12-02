@@ -4,15 +4,9 @@ export type PlanetLocation = {
   id: string;
   x: number;
   y: number;
-  subX: number;
-  subY: number;
-  globalX: number;
-  globalY: number;
 };
 
 export type Statistics = {
-  subX: number;
-  subY: number;
   maxStake: number;
   production: number;
   attack: number;

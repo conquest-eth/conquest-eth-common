@@ -34,9 +34,6 @@ export class SpaceInfoImpl implements SpaceInfo {
       return undefined;
     }
 
-    const subX = 1 - _genesis.r_u8(location, 2, 3);
-    const subY = 1 - _genesis.r_u8(location, 3, 3);
-
     const maxStake = _genesis.r_normalFrom(
       location,
       4,
@@ -58,16 +55,10 @@ export class SpaceInfoImpl implements SpaceInfo {
       location: {
         id: location,
         x,
-        y,
-        subX,
-        subY,
-        globalX: x * 4 + subX,
-        globalY: y * 4 + subY,
+        y
       },
       type,
       stats: {
-        subX,
-        subY,
         maxStake,
         production,
         attack,
