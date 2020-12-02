@@ -10,9 +10,9 @@ export class StateAdapterFromContract implements StateAdapter {
     // TODO get from contract
     return {
       owner: '0x0000000000000000000000000000000000000000',
-      lastOwnershipTime: '0',
-      lastUpdated: '0',
-      numSpaceships: 0,
+      lastOwnershipTime: BigNumber.from('0'),
+      lastUpdated: BigNumber.from('0'),
+      numSpaceships: BigNumber.from('0'),
     };
   }
 }

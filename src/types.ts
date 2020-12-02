@@ -4,8 +4,10 @@ import { BigNumber } from "@ethersproject/bignumber";
 
 export type PlanetLocation = {
   id: string;
-  x: number;
-  y: number; // TODO bring back globalX, globalY
+  x: number; // not needed ?
+  y: number; // not needed ?
+  globalX: number;
+  globalY: number;
 };
 
 export type Statistics = {
@@ -36,7 +38,7 @@ export type PlanetUpdatableData = {
 
 export type Planet = PlanetInfo & {state?: PlanetUpdatableData, loaded: boolean};
 
-export type Position = {x: number; y: number};
+export type Position = {x: number; y:number};
 
 export type Space = {
   getPlanet(x: number, y: number): Planet | undefined;

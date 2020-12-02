@@ -34,6 +34,9 @@ export class SpaceInfoImpl implements SpaceInfo {
       return undefined;
     }
 
+    const subX = 1 - _genesis.r_u8(location, 2, 3);
+    const subY = 1 - _genesis.r_u8(location, 3, 3);
+
     const stake = _genesis.r_normalFrom(
       location,
       4,
@@ -56,6 +59,8 @@ export class SpaceInfoImpl implements SpaceInfo {
         id: location,
         x,
         y,
+        globalX: x * 4 + subX,
+        globalY: y * 4 + subY,
       },
       type,
       stats: {
