@@ -58,7 +58,7 @@ export class SpaceInfoImpl implements SpaceInfo {
     );
     const attack = 4000 + _genesis.r_normal(location, 6) * 400;
     const defense = 4000 + _genesis.r_normal(location, 7) * 400;
-    const speed = 5010 + _genesis.r_normal(location, 8) * 334;
+    const speed = 4090 + _genesis.r_normal(location, 8) * 334;
     const natives = 2000 + _genesis.r_normal(location, 9) * 100;
 
     const type = _genesis.r_u8(location, 255, 23);
@@ -79,6 +79,8 @@ export class SpaceInfoImpl implements SpaceInfo {
         defense,
         speed,
         natives,
+        subX,
+        subY,
       },
     };
     this.cache[id] = data;
