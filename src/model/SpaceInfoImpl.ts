@@ -11,8 +11,17 @@ export class SpaceInfoImpl implements SpaceInfo {
   private genesis: Random;
   private cache: {[id: string]: PlanetInfo | null};
 
-  constructor(genesisHash: string) {
-    this.genesis = new Random(genesisHash);
+  public resolveWindow: number;
+  public timePerDistance: number;
+
+  constructor(config: {
+    genesisHash: string;
+    resolveWindow: number;
+    timePerDistance: number;
+  }) {
+    this.resolveWindow = config.resolveWindow;
+    this.timePerDistance = Math.floor(config.timePerDistance / 4); // Same as in OuterSpace.sol: the coordinates space is 4 times bigger
+    this.genesis = new Random(config.genesisHash);
     this.cache = {};
   }
   getPlanetInfo(x: number, y: number): PlanetInfo | undefined {

@@ -27,6 +27,8 @@ export type PlanetInfo = {
 
 export type SpaceInfo = {
   getPlanetInfo(x: number, y: number): PlanetInfo | undefined;
+  timePerDistance: number;
+  resolveWindow: number;
 };
 
 export type PlanetUpdatableData = {
@@ -42,6 +44,8 @@ export type Position = {x: number; y:number};
 
 export type Space = {
   getPlanet(x: number, y: number): Planet | undefined;
+  timePerDistance: number;
+  resolveWindow: number;
 };
 
 export type Fleet = {
