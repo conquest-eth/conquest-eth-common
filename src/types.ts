@@ -1,6 +1,6 @@
 // import type {BigNumber} from '@ethersproject/bignumber';
 
-import { BigNumber } from "@ethersproject/bignumber";
+import {BigNumber} from '@ethersproject/bignumber';
 
 export type PlanetLocation = {
   id: string;
@@ -33,14 +33,16 @@ export type SpaceInfo = {
 
 export type PlanetUpdatableData = {
   owner: string;
-  lastOwnershipTime: BigNumber;
   numSpaceships: BigNumber;
   lastUpdated: BigNumber;
 };
 
-export type Planet = PlanetInfo & {state?: PlanetUpdatableData, loaded: boolean};
+export type Planet = PlanetInfo & {
+  state?: PlanetUpdatableData;
+  loaded: boolean;
+};
 
-export type Position = {x: number; y:number};
+export type Position = {x: number; y: number};
 
 export type Space = {
   getPlanet(x: number, y: number): Planet | undefined;
