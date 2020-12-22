@@ -26,6 +26,9 @@ export type PlanetInfo = {
 };
 
 export type SpaceInfo = {
+  asyncPlanetIdsFromArea(area: string): Promise<string[]>;
+  planetIdsFromArea(area: string): string[];
+  planetIdsArroundLocation(x: number, y: number): string[];
   getPlanetInfo(x: number, y: number): PlanetInfo | undefined;
   timePerDistance: number;
   resolveWindow: number;
@@ -33,8 +36,10 @@ export type SpaceInfo = {
 
 export type PlanetUpdatableData = {
   owner: string;
-  numSpaceships: BigNumber;
-  lastUpdated: BigNumber;
+  numSpaceships: number;
+  lastUpdated: number;
+  active: boolean;
+  exitTime: number;
 };
 
 export type Planet = PlanetInfo & {
@@ -73,5 +78,4 @@ export type PrivateSpace = Space & {
 export type StateAdapter = {
   // onPlanetUpdate: (func: (planet: PlanetUpdatableData) => void) => void;
   getPlanetUpdatableData(x: number, y: number): PlanetUpdatableData;
-  isPlanetLoaded(x: number, y: number): boolean;
 };

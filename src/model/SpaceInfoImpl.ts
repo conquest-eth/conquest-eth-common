@@ -2,14 +2,24 @@ import type {PlanetInfo, SpaceInfo} from '../types';
 import {Random} from '../util/Random';
 import {
   LocationPointer,
+  locationToXY,
   nextInSpiral,
+  areasArroundLocation,
   StrictLocationPointer,
   xyToLocation,
+  topleftLocationFromArea,
 } from '../util/location';
+
+function skip(): Promise<void> {
+  return new Promise<void>((resolve) => {
+    setTimeout(resolve, 1);
+  })
+}
 
 export class SpaceInfoImpl implements SpaceInfo {
   private genesis: Random;
-  private cache: {[id: string]: PlanetInfo | null};
+  private cache: {[id: string]: PlanetInfo | null} = {};
+  private planetIdsInArea: {[zoneId: string]: string[]} = {};
 
   public resolveWindow: number;
   public timePerDistance: number;
@@ -22,8 +32,79 @@ export class SpaceInfoImpl implements SpaceInfo {
     this.resolveWindow = config.resolveWindow;
     this.timePerDistance = Math.floor(config.timePerDistance / 4); // Same as in OuterSpace.sol: the coordinates space is 4 times bigger
     this.genesis = new Random(config.genesisHash);
-    this.cache = {};
   }
+
+  computeArea(areaId: string): void {
+    if (this.planetIdsInArea[areaId]) {
+      return;
+    }
+    const {x: tlx, y: tly} = topleftLocationFromArea(areaId);
+    const idList = [];
+    // TODO x,y = zone top left corner
+    for(let x = tlx; x < tlx + 24; x++) {
+      for(let y = tly; y < tly +24; y++) {
+        const planet = this.getPlanetInfo(x, y);
+        if (planet) {
+          idList.push(xyToLocation(x,y));
+        }
+      }
+    }
+    this.planetIdsInArea[areaId] = idList;
+  }
+
+  planetIdsFromArea(area: string): string[] {
+    this.computeArea(area);
+    return this.planetIdsInArea[area];
+  }
+
+  planetIdsArroundLocation(locationX: number,locationY: number): string[] {
+    const areas = areasArroundLocation(locationX, locationY);
+    const ids = [];
+    for (const area of areas) {
+      ids.push(...this.planetIdsFromArea(area));
+    }
+    return ids;
+  }
+
+
+  *yieldPlanetIdsFromArea(areaId: string): Generator<string, void> {
+    const {x: tlx, y: tly} = topleftLocationFromArea(areaId);
+
+    // TODO x,y = zone top left corner
+    for(let x = tlx; x < tlx + 24; x++) {
+      for(let y = tly; y < tly +24; y++) {
+        const planet = this.getPlanetInfo(x, y);
+        if (planet) {
+          yield xyToLocation(x,y);
+        }
+      }
+    }
+  }
+
+  async asyncComputeArea(areaId: string): Promise<void> {
+    if (this.planetIdsInArea[areaId]) {
+      return;
+    }
+    const idList = [];
+    let i = 0;
+    for (const id of this.yieldPlanetIdsFromArea(areaId)) {
+      idList.push(id);
+      i++;
+      if (i % 3 == 0) {
+        await skip(); // TODO use worker instead
+      }
+    }
+
+    this.planetIdsInArea[areaId] = idList;
+  }
+
+  async asyncPlanetIdsFromArea(area: string): Promise<string[]> {
+    if (!this.planetIdsInArea[area]) {
+      await this.asyncComputeArea(area);
+    }
+    return this.planetIdsInArea[area];
+  }
+
   getPlanetInfo(x: number, y: number): PlanetInfo | undefined {
     const id = '' + x + ',' + y;
     const inCache = this.cache[id];

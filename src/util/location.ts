@@ -41,6 +41,70 @@ export function xyToLocation(x: number, y: number): string {
   return location;
 }
 
+export function topleftLocationFromArea(area: string): {x: number, y: number} {
+  const {x: areaX, y: areaY} = locationToXY(area);
+  return {
+    x: areaX * 24 - 12,
+    y: areaY * 24 - 12
+  };
+}
+
+export function areaFromLocation(locationX: number, locationY: number): string {
+  const absX = Math.abs(locationX);
+  const signX = locationX < -12 ? -1 : 1;
+  const centerAreaX = signX * Math.floor((absX + 12) / 24);
+  const absY = Math.abs(locationY);
+  const signY = locationY < -12 ? -1 : 1;
+  const centerAreaY = signY * Math.floor((absY + 12) / 24);
+  return xyToLocation(centerAreaX, centerAreaY);
+}
+
+export function areasArroundLocation(
+  locationX: number,
+  locationY: number
+): string[] {
+  const absX = Math.abs(locationX);
+  const signX = locationX < -12 ? -1 : 1;
+  const centerAreaX = signX * Math.floor((absX + 12) / 24);
+  const absY = Math.abs(locationY);
+  const signY = locationY < -12 ? -1 : 1;
+  const centerAreaY = signY * Math.floor((absY + 12) / 24);
+
+  return [
+    xyToLocation(centerAreaX, centerAreaY),
+
+    xyToLocation(centerAreaX + 1, centerAreaY),
+    xyToLocation(centerAreaX - 1, centerAreaY),
+    xyToLocation(centerAreaX + 1, centerAreaY + 1),
+    xyToLocation(centerAreaX - 1, centerAreaY + 1),
+    xyToLocation(centerAreaX + 1, centerAreaY - 1),
+    xyToLocation(centerAreaX - 1, centerAreaY - 1),
+    xyToLocation(centerAreaX, centerAreaY + 1),
+    xyToLocation(centerAreaX, centerAreaY - 1),
+
+    xyToLocation(centerAreaX - 2, centerAreaY -2),
+    xyToLocation(centerAreaX - 1, centerAreaY -2),
+    xyToLocation(centerAreaX, centerAreaY -2),
+    xyToLocation(centerAreaX + 1, centerAreaY -2),
+    xyToLocation(centerAreaX + 2, centerAreaY -2),
+
+    xyToLocation(centerAreaX + 2, centerAreaY - 1),
+    xyToLocation(centerAreaX + 2, centerAreaY),
+    xyToLocation(centerAreaX + 2, centerAreaY + 1),
+    xyToLocation(centerAreaX + 2, centerAreaY + 2),
+
+    xyToLocation(centerAreaX + 1, centerAreaY + 2),
+    xyToLocation(centerAreaX, centerAreaY + 2),
+    xyToLocation(centerAreaX - 1, centerAreaY + 2),
+    xyToLocation(centerAreaX - 2, centerAreaY + 2),
+
+    xyToLocation(centerAreaX - 2, centerAreaY + 1),
+    xyToLocation(centerAreaX - 2, centerAreaY),
+    xyToLocation(centerAreaX - 2, centerAreaY - 1),
+
+  ];
+}
+
 export function zoneFromLocation(locationX: number, locationY: number): string {
   const absX = Math.abs(locationX);
   const signX = locationX < -32 ? -1 : 1;
