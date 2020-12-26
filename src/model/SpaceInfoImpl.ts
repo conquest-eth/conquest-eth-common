@@ -23,14 +23,17 @@ export class SpaceInfoImpl implements SpaceInfo {
 
   public resolveWindow: number;
   public timePerDistance: number;
+  public exitDuration: number;
 
   constructor(config: {
     genesisHash: string;
     resolveWindow: number;
     timePerDistance: number;
+    exitDuration: number;
   }) {
     this.resolveWindow = config.resolveWindow;
     this.timePerDistance = Math.floor(config.timePerDistance / 4); // Same as in OuterSpace.sol: the coordinates space is 4 times bigger
+    this.exitDuration = config.exitDuration;
     this.genesis = new Random(config.genesisHash);
   }
 

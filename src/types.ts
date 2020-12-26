@@ -32,6 +32,7 @@ export type SpaceInfo = {
   getPlanetInfo(x: number, y: number): PlanetInfo | undefined;
   timePerDistance: number;
   resolveWindow: number;
+  exitDuration: number;
 };
 
 export type PlanetUpdatableData = {
@@ -53,6 +54,11 @@ export type Space = {
   getPlanet(x: number, y: number): Planet | undefined;
   timePerDistance: number;
   resolveWindow: number;
+  exitDuration: number;
+  isActive(planet: Planet, time: number): boolean;
+  isExiting(planet: Planet, time: number): boolean;
+  exitRatio(planet: Planet, time: number): number;
+  getCurrentNumSpaceships(planet: Planet, time: number): number;
 };
 
 export type Fleet = {
