@@ -1,8 +1,7 @@
-import type {PlanetInfo, SpaceInfo} from '../types';
+import type {PlanetInfo} from '../types';
 import {Random} from '../util/Random';
 import {
   LocationPointer,
-  locationToXY,
   nextInSpiral,
   areasArroundLocation,
   StrictLocationPointer,
@@ -16,7 +15,7 @@ function skip(): Promise<void> {
   })
 }
 
-export class SpaceInfoImpl implements SpaceInfo {
+export class SpaceInfo {
   private genesis: Random;
   private cache: {[id: string]: PlanetInfo | null} = {};
   private planetIdsInArea: {[zoneId: string]: string[]} = {};

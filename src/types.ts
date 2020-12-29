@@ -1,6 +1,3 @@
-// import type {BigNumber} from '@ethersproject/bignumber';
-
-import {BigNumber} from '@ethersproject/bignumber';
 
 export type PlanetLocation = {
   id: string;
@@ -25,41 +22,29 @@ export type PlanetInfo = {
   stats: Statistics;
 };
 
-export type SpaceInfo = {
-  asyncPlanetIdsFromArea(area: string): Promise<string[]>;
-  planetIdsFromArea(area: string): string[];
-  planetIdsArroundLocation(x: number, y: number): string[];
-  getPlanetInfo(x: number, y: number): PlanetInfo | undefined;
-  timePerDistance: number;
-  resolveWindow: number;
-  exitDuration: number;
-};
 
-export type PlanetUpdatableData = {
+export type PlanetContractState = {
   owner: string;
   numSpaceships: number;
   lastUpdated: number;
   active: boolean;
   exitTime: number;
+}
+
+export type PlanetState = {
+  owner: string;
+  numSpaceships: number;
+  active: boolean;
+  exiting: boolean;
+  exitTimeLeft: number;
 };
 
 export type Planet = PlanetInfo & {
-  state?: PlanetUpdatableData;
+  state?: PlanetState;
   loaded: boolean;
 };
 
 export type Position = {x: number; y: number};
-
-export type Space = {
-  getPlanet(x: number, y: number): Planet | undefined;
-  timePerDistance: number;
-  resolveWindow: number;
-  exitDuration: number;
-  isActive(planet: Planet, time: number): boolean;
-  isExiting(planet: Planet, time: number): boolean;
-  exitRatio(planet: Planet, time: number): number;
-  getCurrentNumSpaceships(planet: Planet, time: number): number;
-};
 
 export type Fleet = {
   from: Position;
@@ -72,16 +57,4 @@ export type OwnFleet = Fleet & {
   to: Position;
   resolveTxHash?: string;
   sendTxHash?: string;
-};
-
-export type PrivateSpace = Space & {
-  getOwnFleets(): OwnFleet[];
-  // getFleetsFrom(x: number, y: number): Fleet[];
-  // getFleetsTo(x: number, y: number): Fleet[];
-  player: string | undefined;
-};
-
-export type StateAdapter = {
-  // onPlanetUpdate: (func: (planet: PlanetUpdatableData) => void) => void;
-  getPlanetUpdatableData(x: number, y: number): PlanetUpdatableData;
 };
