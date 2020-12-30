@@ -107,6 +107,43 @@ export class SpaceInfo {
     return this.planetIdsInArea[area];
   }
 
+  syncFromRect(x0: number, y0: number, x1: number, y1: number): string[] {
+    const ids = [];
+    for(let x = x0; x <= x1; x++) {
+      for(let y = y0; y <= y1; y++) {
+        const planet = this.getPlanetInfo(x, y);
+        if (planet) {
+          ids.push(xyToLocation(x,y));
+        }
+      }
+    }
+    return ids;
+  }
+
+  *yieldPlanetIdsFromRect(x0: number, y0: number, x1: number, y1: number): Generator<string, void> {
+    for(let x = x0; x <= x1; x++) {
+      for(let y = y0; y <= y1; y++) {
+        const planet = this.getPlanetInfo(x, y);
+        if (planet) {
+          yield xyToLocation(x,y);
+        }
+      }
+    }
+  }
+
+  async asyncPlanetIdsFromRect(x0: number, y0: number, x1: number, y1: number): Promise<string[]> {
+    const idList = [];
+    let i = 0;
+    for (const id of this.yieldPlanetIdsFromRect(x0, y0, x1, y1)) {
+      idList.push(id);
+      i++;
+      if (i % 6 == 0) {
+        await skip(); // TODO use worker instead
+      }
+    }
+    return idList;
+  }
+
   getPlanetInfo(x: number, y: number): PlanetInfo | undefined {
     const id = '' + x + ',' + y;
     const inCache = this.cache[id];

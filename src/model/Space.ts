@@ -1,11 +1,12 @@
 import {Planet, PlanetContractState} from '../types';
 import { SpaceInfo } from './SpaceInfo';
-import {xyToLocation, areasArroundLocation, locationToXY} from '../util/location';
+import {xyToLocation, locationToXY} from '../util/location';
 
 export type PlanetData = PlanetContractState & {id: string};
 
 export type TimeKeeper = {
-  setTimeout: (fn: () => void, sec: number) => unknown;
+  setTimeout: (fn: () => void, sec: number) => number;
+  clearTimeout: (t: number) => void;
   getTime: () => number;
 }
 
@@ -20,17 +21,24 @@ export class Space {
 
   private planetRecords: Record<string, PlanetRecord | undefined> = {};
   private planetIdsToUpdate: string[] = [];
-  private lastX: number | undefined = undefined;;
-  private lastY: number | undefined = undefined;
-  private lastCenterArea: string | undefined = undefined;
-  private fetchingCounter = 0;
+  // private extraLocations: string[] = [];
+
+  private focusTimeout: number | undefined;
+  private fetchUpdateTimeout: number | undefined;
+  private fetchInProgress = false;
+  private fetchQueued = false;
+  private x0 = 0;
+  private y0 = 0;
+  private x1 = 0;
+  private y1 = 0;
 
   private planetListeners: Record<string, number[] | undefined> = {};
   private listenerIndex = 0;
   private listeners: Record<number, (planet: Planet) => void> = {};
 
   constructor(public spaceInfo: SpaceInfo, private fetch: PlanetFetch, private timeKeeper: TimeKeeper) {
-   this._timeBasedUpdate();
+    this._fetchUpdate();
+    this._timeBasedUpdate();
   }
 
   // THIS have the whole planet postiion synchronously
@@ -96,17 +104,32 @@ export class Space {
     delete this.listeners[listenerIndex];
   }
 
-  async focus(locationX: number, locationY: number): Promise<void> {
-    if (locationX !== this.lastX || locationY !== this.lastY) {
-      this.lastX = locationX;
-      this.lastY = locationY;
-      const areas = areasArroundLocation(locationX, locationY);
-      const centerArea = areas[0];
-      if (this.lastCenterArea !== centerArea) {
-        this.lastCenterArea = centerArea;
-        this.fetchingCounter++;
-        this._startFetching(this.fetchingCounter, areas);
-      }
+
+  focus(locationX0: number, locationY0: number, locationX1: number, locationY1: number): void {
+    this._syncSetupRecords(locationX0, locationY0, locationX1, locationY1);
+    if (this.focusTimeout) {
+      this.timeKeeper.clearTimeout(this.focusTimeout);
+    }
+    this.focusTimeout = this.timeKeeper.setTimeout(() => this._focus(locationX0, locationY0, locationX1, locationY1), 1);
+  }
+
+  private async _focus(locationX0: number, locationY0: number, locationX1: number, locationY1: number): Promise<void> {
+    this.focusTimeout = undefined;
+    console.log("FOCUS", {locationX0, locationY0, locationX1, locationY1})
+    const width = locationX1 - locationX0;
+    const height = locationY1 - locationY0;
+    this.x0 = Math.floor(locationX0 - width / 2);
+    this.x1 = Math.ceil(locationX1 + width / 2);
+    this.y0 = Math.floor(locationY0 - height / 2);
+    this.y1 = Math.ceil(locationY1 + height / 2);
+    // this._setupRecords(this.x0, this.y0, this.x1, this.y1);
+    if (this.fetchUpdateTimeout) {
+      this.timeKeeper.clearTimeout(this.fetchUpdateTimeout);
+      this._fetchUpdate(); // TODO check reconsiliation if already being processed
+    } else if (!this.fetchInProgress) {
+      this._fetchUpdate(); // TODO check reconsiliation if already being processed
+    } else {
+      this.fetchQueued = true;
     }
   }
 
@@ -126,83 +149,148 @@ export class Space {
           listener(planet);
         } else {
           listeners.splice(i,1);
-          // i--;
+          // i--; // TODO check ?
+          if (listeners.length === 0) {
+            delete this.planetListeners[planetId];
+          }
         }
       }
     }
   }
 
-  private async _startFetching(fetchingCounterOnFetch: number, areas: string[]) {
-    console.log("START FETCHING...");
-    this.planetIdsToUpdate.splice(0, this.planetIdsToUpdate.length);
-    for (const area of areas) {
-      try {
-        // COMPUTE PLANETINFO
-        const locations = await this.spaceInfo.asyncPlanetIdsFromArea(area);
-        // console.log({locations});
+  skip(): Promise<void> {
+    return new Promise<void>((resolve) => {
+      this.timeKeeper.setTimeout(resolve, 1);
+    })
+  }
 
-        // SETUP PLANET RECORD WITH EMPTY CONTRACT STATE
-        for (const location of locations) {
-          const planetRecord = this.planetRecords[location];
-          if (!planetRecord) {
-            const xy = locationToXY(location); // TODO speed up
-            const planetInfo = this.spaceInfo.getPlanetInfo(xy.x, xy.y); // TODO getPlanetInfo should take a location ?
-            if (!planetInfo) {
-              throw new Error(`no planet infor for a fetched planet `)
-            }
-            this._setPlanet(location, {
-              planet: {
-                ...planetInfo,
-                state: undefined,
-                loaded: false
-              }
-            })
-          }
+  private _syncSetupRecords(x0: number, y0: number, x1: number, y1: number, extraLocations: string[] = []): string[] {
+    const locations = this.spaceInfo.syncFromRect(x0, y0, x1, y1);
+    for (const extraLocation of extraLocations) {
+      if (locations.indexOf(extraLocation) === -1) {
+        locations.push(extraLocation);
+      }
+    }
+    for (const location of locations) {
+      this._setupRecord(location);
+    }
+    return locations;
+  }
 
+
+  private _setupRecord(location: string) {
+    const planetRecord = this.planetRecords[location];
+    if (!planetRecord) {
+      const xy = locationToXY(location); // TODO speed up
+      const planetInfo = this.spaceInfo.getPlanetInfo(xy.x, xy.y); // TODO getPlanetInfo should take a location ?
+      if (!planetInfo) {
+        throw new Error(`no planet infor for a fetched planet `)
+      }
+      this._setPlanet(location, {
+        planet: {
+          ...planetInfo,
+          state: undefined,
+          loaded: false
         }
+      })
+    }
+  }
 
-        // console.log({planetIds});
-        const planetDatas = await this.fetch(locations);
-        if (fetchingCounterOnFetch !== this.fetchingCounter) {
-          return; // discard pending ? // TODO more complex (blockNumber?)
-        }
+  // private async _setupRecords(x0: number, y0: number, x1: number, y1: number, extraLocations: string[] = []): Promise<string[]> {
+  //   const locations = [];
+  //   let i = 0;
+  //   for (const location of this.spaceInfo.yieldPlanetIdsFromRect(x0, y0, x1, y1)) {
+  //     i++;
+  //     locations.push(location);
+  //     this._setupRecord(location);
+  //     if (i % 3 == 0) {
+  //       await this.skip(); // TODO use worker instead
+  //     }
+  //   }
+  //   for (const extraLocation of extraLocations) {
+  //     if (locations.indexOf(extraLocation) === -1) {
+  //       locations.push(extraLocation);
+  //       this._setupRecord(extraLocation);
+  //     }
+  //   }
+  //   return locations;
+  // }
 
-        // console.log({planetDatas});
-        for (let i = 0; i < planetDatas.length; i++) {
-          const location = locations[i];
-          const planetDatum = planetDatas[i];
-          if (!planetDatum.owner) {
-            console.error(`missing owner for ${location}`)
-          }
-          // const queryTime = Math.floor(Date.now() / 1000); // TODO use latest block number for queries
-          const contractState = {
-            owner: planetDatum.owner,
-            exitTime: planetDatum.exitTime,
-            numSpaceships: planetDatum.numSpaceships,
-            lastUpdated: planetDatum.lastUpdated,
-            active: planetDatum.active,
-            // queryTime // TODO ?
-          };
-          const planetRecord = this.planetRecords[location];
-          if (!planetRecord) {
-            throw new Error(`no planet record for ${location}`)
-          }
-          planetRecord.contractState = contractState;
-          this._setPlanet(location, planetRecord);
-          this.planetIdsToUpdate.push(location);
-        }
-      } catch(e) {
-        console.error(e);
+  private async _setupRecords(x0: number, y0: number, x1: number, y1: number, extraLocations: string[] = []): Promise<string[]> {
+    console.log("SETUP RECORDS...", {x0,y0,x1,y1});
+    // COMPUTE PLANET INFOS
+    const locations = await this.spaceInfo.asyncPlanetIdsFromRect(x0, y0, x1, y1);
+    for (const extraLocation of extraLocations) {
+      if (locations.indexOf(extraLocation) === -1) {
+        locations.push(extraLocation);
       }
     }
 
-    this.timeKeeper.setTimeout(() => this._startFetching(fetchingCounterOnFetch, areas), 5); //TODO config delay
+    // SETUP PLANET RECORD WITH EMPTY CONTRACT STATE
+    for (const location of locations) {
+      this._setupRecord(location);
+    }
+    console.log("..DONE RECORDS", {x0,y0,x1,y1});
+    return locations;
+  }
+
+  private async _fetchUpdate(): Promise<void> {
+    this.fetchUpdateTimeout = undefined;
+    this.fetchInProgress = true;
+    try {
+      const extraLocations = Object.keys(this.planetListeners);
+      const locations = this._syncSetupRecords(this.x0, this.y0, this.x1, this.y1, extraLocations); //await this._setupRecords(this.x0, this.y0, this.x1, this.y1, extraLocations);
+      // TODO batch grouping :
+      console.log("FETCHING....");
+      const planetDatas = await this.fetch(locations);
+      console.log("...DONE");
+      this.planetIdsToUpdate.splice(0, this.planetIdsToUpdate.length);
+      // console.log({planetDatas});
+      for (let i = 0; i < planetDatas.length; i++) {
+        const location = locations[i];
+        const planetDatum = planetDatas[i];
+        if (!planetDatum.owner) {
+          console.error(`missing owner for ${location}`)
+        }
+        // const queryTime = Math.floor(Date.now() / 1000); // TODO use latest block number for queries
+        const contractState = {
+          owner: planetDatum.owner,
+          exitTime: planetDatum.exitTime,
+          numSpaceships: planetDatum.numSpaceships,
+          lastUpdated: planetDatum.lastUpdated,
+          active: planetDatum.active,
+          // queryTime // TODO ?
+        };
+        const planetRecord = this.planetRecords[location];
+        if (!planetRecord) {
+          throw new Error(`no planet record for ${location}`)
+        }
+        planetRecord.contractState = contractState;
+        this._setPlanet(location, planetRecord);
+        this.planetIdsToUpdate.push(location);
+      }
+    } catch(e) {
+      console.error(e);
+    }
+
+    this.fetchInProgress = false;
+    let delay = 5; // config delay;
+    if (this.fetchQueued) {
+      this.fetchQueued = false;
+      delay = 0.01;
+    }
+    console.log(`NEW UPDATED in ${delay} s`);
+    this.fetchUpdateTimeout = this.timeKeeper.setTimeout(this._fetchUpdate.bind(this), delay);
   }
 
   private _timeBasedUpdate(): void {
-    console.log({planetIdsToUpdate: this.planetIdsToUpdate});
-    for (const planetId of this.planetIdsToUpdate) {
-      this._updatePlanetRecord(planetId, this.timeKeeper.getTime());
+    // console.log({planetIdsToUpdate: this.planetIdsToUpdate});
+    try {
+      for (const planetId of this.planetIdsToUpdate) {
+        this._updatePlanetRecord(planetId, this.timeKeeper.getTime());
+      }
+    } catch( e) {
+      console.error(e);
     }
     this.timeKeeper.setTimeout(this._timeBasedUpdate.bind(this), 1);
   }
