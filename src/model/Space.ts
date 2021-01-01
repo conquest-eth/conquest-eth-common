@@ -217,7 +217,7 @@ export class Space {
   // }
 
   private async _setupRecords(x0: number, y0: number, x1: number, y1: number, extraLocations: string[] = []): Promise<string[]> {
-    console.log("SETUP RECORDS...", {x0,y0,x1,y1});
+    // console.log("SETUP RECORDS...", {x0,y0,x1,y1});
     // COMPUTE PLANET INFOS
     const locations = await this.spaceInfo.asyncPlanetIdsFromRect(x0, y0, x1, y1);
     for (const extraLocation of extraLocations) {
@@ -230,7 +230,7 @@ export class Space {
     for (const location of locations) {
       this._setupRecord(location);
     }
-    console.log("..DONE RECORDS", {x0,y0,x1,y1});
+    // console.log("..DONE RECORDS", {x0,y0,x1,y1});
     return locations;
   }
 
@@ -241,9 +241,9 @@ export class Space {
       const extraLocations = Object.keys(this.planetListeners);
       const locations = this._syncSetupRecords(this.x0, this.y0, this.x1, this.y1, extraLocations); //await this._setupRecords(this.x0, this.y0, this.x1, this.y1, extraLocations);
       // TODO batch grouping :
-      console.log("FETCHING....");
+      // console.log("FETCHING....");
       const planetDatas = await this.fetch(locations);
-      console.log("...DONE");
+      // console.log("...DONE");
       this.planetIdsToUpdate.splice(0, this.planetIdsToUpdate.length);
       // console.log({planetDatas});
       for (let i = 0; i < planetDatas.length; i++) {
@@ -279,7 +279,7 @@ export class Space {
       this.fetchQueued = false;
       delay = 0.01;
     }
-    console.log(`NEW UPDATED in ${delay} s`);
+    // console.log(`NEW UPDATE in ${delay} s`);
     this.fetchUpdateTimeout = this.timeKeeper.setTimeout(this._fetchUpdate.bind(this), delay);
   }
 
