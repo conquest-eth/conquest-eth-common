@@ -50,11 +50,12 @@ export type Fleet = {
   from: Position;
   fleetAmount: number;
   launchTime: number;
+  duration: number;
   owner: string;
 };
 
 export type OwnFleet = Fleet & {
   to: Position;
   resolveTxHash?: string;
-  sendTxHash?: string;
+  sendTxHash: string;
 };
