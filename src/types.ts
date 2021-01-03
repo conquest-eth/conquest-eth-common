@@ -52,6 +52,7 @@ export type Fleet = {
   launchTime: number;
   duration: number;
   owner: string;
+  secret: string;
 };
 
 export type OwnFleet = Fleet & {
