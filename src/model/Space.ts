@@ -311,6 +311,7 @@ export class Space {
     let numSpaceships = contractState.numSpaceships;
     let exiting = !!contractState.exitTime;
     let exitTimeLeft = this.spaceInfo.exitDuration - (time - contractState.exitTime);
+    const natives = contractState.lastUpdated == 0;
     if (contractState.exitTime > 0 && time > contractState.exitTime + this.spaceInfo.exitDuration) {
       // exited
       numSpaceships = 0;
@@ -320,12 +321,14 @@ export class Space {
       exitTimeLeft = 0;
     } else if (contractState.active) {
       numSpaceships = contractState.numSpaceships + (Math.floor(((time - contractState.lastUpdated) * planetRecord.planet.stats.production) / (60 * 60)));
+    } else if (natives) {
+      numSpaceships = planetRecord.planet.stats.natives; // TODO show num Natives
     }
 
     if (!planetRecord.planet.state) {
       planetRecord.planet.loaded = true;
       planetRecord.planet.state = {
-        owner, active, numSpaceships, exiting, exitTimeLeft
+        owner, active, numSpaceships, exiting, exitTimeLeft, natives
       };
     } else {
       planetRecord.planet.state.owner = owner;
@@ -333,6 +336,7 @@ export class Space {
       planetRecord.planet.state.numSpaceships = numSpaceships;
       planetRecord.planet.state.exiting = exiting;
       planetRecord.planet.state.exitTimeLeft = exitTimeLeft;
+      planetRecord.planet.state.natives = natives;
     }
 
     this._callListeners(planetId, planetRecord.planet);

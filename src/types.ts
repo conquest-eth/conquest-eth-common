@@ -37,6 +37,7 @@ export type PlanetState = {
   active: boolean;
   exiting: boolean;
   exitTimeLeft: number;
+  natives: boolean;
 };
 
 export type Planet = PlanetInfo & {
