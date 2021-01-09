@@ -38,6 +38,7 @@ export type PlanetState = {
   exiting: boolean;
   exitTimeLeft: number;
   natives: boolean;
+  capturing: boolean;
 };
 
 export type Planet = PlanetInfo & {
@@ -49,11 +50,11 @@ export type Position = {x: number; y: number};
 
 export type Fleet = {
   from: Position;
-  fleetAmount: number;
-  launchTime: number;
-  duration: number;
-  owner: string;
-  secret: string;
+  fleetAmount: number; // not needed to store, except to not require contract fetch
+  launchTime: number; // a bit needed until fleet is fetchable from contract
+  duration: number; // not needed to store, except to not require computing stats from from planet
+  owner: string; // not needed at all to store : TODO remove ?
+  secret: string; // needed
 };
 
 export type OwnFleet = Fleet & {

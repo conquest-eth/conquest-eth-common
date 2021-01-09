@@ -4,7 +4,7 @@ import { SpaceInfo } from './SpaceInfo';
 
 export class PrivateSpace extends Space {
 
-  constructor(spaceInfo: SpaceInfo, fetch: PlanetFetch, timeKeeper: TimeKeeper, private privateAccount: {walletAddress: string; getFleets(): OwnFleet[], isTxPerformed(txHash?: string): boolean}) {
+  constructor(spaceInfo: SpaceInfo, fetch: PlanetFetch, timeKeeper: TimeKeeper, private privateAccount: {walletAddress: string; getFleets(): OwnFleet[], isTxPerformed(txHash?: string): boolean, isCapturing(location: string): boolean}) {
     super(spaceInfo, fetch, timeKeeper);
   }
   get player(): string | undefined {
@@ -16,6 +16,14 @@ export class PrivateSpace extends Space {
 
   isTxPerformed(txHash?: string): boolean {
     return this.privateAccount.isTxPerformed(txHash);
+  }
+
+  isCapturing(planetId: string): boolean {
+    const capturing = this.privateAccount.isCapturing(planetId);
+    if (capturing) {
+      console.log({planetId});
+    }
+    return capturing;
   }
   // getFleetsFrom(x: number, y: number): Fleet[] {
   //   return []; // TODO filter getFleets()

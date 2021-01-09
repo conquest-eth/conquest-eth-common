@@ -305,6 +305,10 @@ export class Space {
     this.timeKeeper.setTimeout(this._timeBasedUpdate.bind(this), 1);
   }
 
+  protected isCapturing(planetId: string): boolean {
+    return false;
+  }
+
   private _updatePlanetRecord(planetId: string, time: number): void {
     const planetRecord = this.planetRecords[planetId];
     if (!planetRecord) {
@@ -316,6 +320,7 @@ export class Space {
       // SKIP UNTIL THERE IS A CONTRACT STATE TO COMPUTE PREDICTED VALUES FROM TIME
       return;
     }
+    let capturing = false;
     let owner = contractState.owner;
     let active = contractState.active;
     let numSpaceships = contractState.numSpaceships;
@@ -335,10 +340,14 @@ export class Space {
       numSpaceships = planetRecord.planet.stats.natives; // TODO show num Natives
     }
 
+    if (!active) {
+      capturing = this.isCapturing(planetId);
+    }
+
     if (!planetRecord.planet.state) {
       planetRecord.planet.loaded = true;
       planetRecord.planet.state = {
-        owner, active, numSpaceships, exiting, exitTimeLeft, natives
+        owner, active, numSpaceships, exiting, exitTimeLeft, natives, capturing
       };
     } else {
       planetRecord.planet.state.owner = owner;
@@ -347,6 +356,8 @@ export class Space {
       planetRecord.planet.state.exiting = exiting;
       planetRecord.planet.state.exitTimeLeft = exitTimeLeft;
       planetRecord.planet.state.natives = natives;
+      planetRecord.planet.state.capturing = capturing;
+      // planetRecord.planet.state.outOfReach = // TODO
     }
 
     this._callListeners(planetId, planetRecord.planet);
