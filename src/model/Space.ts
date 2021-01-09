@@ -10,7 +10,7 @@ export type TimeKeeper = {
   getTime: () => number;
 }
 
-export type PlanetFetch = (ids: string[]) => Promise<PlanetData[]>
+export type PlanetFetch = (ids: string[]) => Promise<{discovered: {minX: number; minY: number; maxX: number; maxY: number}, planetStates: PlanetData[]}>
 
 type PlanetRecord = {
   contractState?: PlanetContractState; // TODO optional ?
@@ -31,6 +31,8 @@ export class Space {
   private y0 = 0;
   private x1 = 0;
   private y1 = 0;
+
+  public discovered: {x1: number; y1: number; x2: number; y2: number} = {x1:-1, y1:-1, x2:1, y2:1};
 
   private planetListeners: Record<string, number[] | undefined> = {};
   private listenerIndex = 0;
@@ -242,7 +244,15 @@ export class Space {
       const locations = this._syncSetupRecords(this.x0, this.y0, this.x1, this.y1, extraLocations); //await this._setupRecords(this.x0, this.y0, this.x1, this.y1, extraLocations);
       // TODO batch grouping :
       // console.log("FETCHING....");
-      const planetDatas = await this.fetch(locations);
+      const result = await this.fetch(locations);
+      const planetDatas = result.planetStates;
+      const discovered = result.discovered;
+      console.log({result});
+      this.discovered.x1 = - discovered.minX;
+      this.discovered.y1 = - discovered.minY;
+      this.discovered.x2 = discovered.maxX;
+      this.discovered.y2 = discovered.maxY;
+
       // console.log("...DONE");
       this.planetIdsToUpdate.splice(0, this.planetIdsToUpdate.length);
       // console.log({planetDatas});
