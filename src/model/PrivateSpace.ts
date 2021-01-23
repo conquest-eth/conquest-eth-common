@@ -19,11 +19,7 @@ export class PrivateSpace extends Space {
   }
 
   isCapturing(planetId: string): boolean {
-    const capturing = this.privateAccount.isCapturing(planetId);
-    if (capturing) {
-      console.log({planetId});
-    }
-    return capturing;
+    return this.privateAccount.isCapturing(planetId);
   }
   // getFleetsFrom(x: number, y: number): Fleet[] {
   //   return []; // TODO filter getFleets()

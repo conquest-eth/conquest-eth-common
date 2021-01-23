@@ -247,7 +247,6 @@ export class Space {
       const result = await this.fetch(locations);
       const planetDatas = result.planetStates;
       const discovered = result.discovered;
-      console.log({result});
       this.discovered.x1 = - discovered.minX;
       this.discovered.y1 = - discovered.minY;
       this.discovered.x2 = discovered.maxX;
