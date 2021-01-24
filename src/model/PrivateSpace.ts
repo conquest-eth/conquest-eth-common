@@ -1,10 +1,19 @@
 import {OwnFleet} from '../types';
-import { PlanetFetch, Space, TimeKeeper } from './Space';
-import { SpaceInfo } from './SpaceInfo';
+import {PlanetFetch, Space, TimeKeeper} from './Space';
+import {SpaceInfo} from './SpaceInfo';
 
 export class PrivateSpace extends Space {
-
-  constructor(spaceInfo: SpaceInfo, fetch: PlanetFetch, timeKeeper: TimeKeeper, private privateAccount: {walletAddress: string; getFleets(): OwnFleet[], isTxPerformed(txHash?: string): boolean, isCapturing(location: string): boolean}) {
+  constructor(
+    spaceInfo: SpaceInfo,
+    fetch: PlanetFetch,
+    timeKeeper: TimeKeeper,
+    private privateAccount: {
+      walletAddress?: string;
+      getFleets(): OwnFleet[];
+      isTxPerformed(txHash?: string): boolean;
+      isCapturing(location: string): boolean;
+    }
+  ) {
     super(spaceInfo, fetch, timeKeeper);
   }
   get player(): string | undefined {
