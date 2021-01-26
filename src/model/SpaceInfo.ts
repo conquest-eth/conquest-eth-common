@@ -12,7 +12,7 @@ import {
 function skip(): Promise<void> {
   return new Promise<void>((resolve) => {
     setTimeout(resolve, 1);
-  })
+  });
 }
 
 export class SpaceInfo {
@@ -43,11 +43,11 @@ export class SpaceInfo {
     const {x: tlx, y: tly} = topleftLocationFromArea(areaId);
     const idList = [];
     // TODO x,y = zone top left corner
-    for(let x = tlx; x < tlx + 24; x++) {
-      for(let y = tly; y < tly +24; y++) {
+    for (let x = tlx; x < tlx + 24; x++) {
+      for (let y = tly; y < tly + 24; y++) {
         const planet = this.getPlanetInfo(x, y);
         if (planet) {
-          idList.push(xyToLocation(x,y));
+          idList.push(xyToLocation(x, y));
         }
       }
     }
@@ -59,7 +59,7 @@ export class SpaceInfo {
     return this.planetIdsInArea[area];
   }
 
-  planetIdsArroundLocation(locationX: number,locationY: number): string[] {
+  planetIdsArroundLocation(locationX: number, locationY: number): string[] {
     const areas = areasArroundLocation(locationX, locationY);
     const ids = [];
     for (const area of areas) {
@@ -68,16 +68,15 @@ export class SpaceInfo {
     return ids;
   }
 
-
   *yieldPlanetIdsFromArea(areaId: string): Generator<string, void> {
     const {x: tlx, y: tly} = topleftLocationFromArea(areaId);
 
     // TODO x,y = zone top left corner
-    for(let x = tlx; x < tlx + 24; x++) {
-      for(let y = tly; y < tly +24; y++) {
+    for (let x = tlx; x < tlx + 24; x++) {
+      for (let y = tly; y < tly + 24; y++) {
         const planet = this.getPlanetInfo(x, y);
         if (planet) {
-          yield xyToLocation(x,y);
+          yield xyToLocation(x, y);
         }
       }
     }
@@ -109,29 +108,39 @@ export class SpaceInfo {
 
   syncFromRect(x0: number, y0: number, x1: number, y1: number): string[] {
     const ids = [];
-    for(let x = x0; x <= x1; x++) {
-      for(let y = y0; y <= y1; y++) {
+    for (let x = x0; x <= x1; x++) {
+      for (let y = y0; y <= y1; y++) {
         const planet = this.getPlanetInfo(x, y);
         if (planet) {
-          ids.push(xyToLocation(x,y));
+          ids.push(xyToLocation(x, y));
         }
       }
     }
     return ids;
   }
 
-  *yieldPlanetIdsFromRect(x0: number, y0: number, x1: number, y1: number): Generator<string, void> {
-    for(let x = x0; x <= x1; x++) {
-      for(let y = y0; y <= y1; y++) {
+  *yieldPlanetIdsFromRect(
+    x0: number,
+    y0: number,
+    x1: number,
+    y1: number
+  ): Generator<string, void> {
+    for (let x = x0; x <= x1; x++) {
+      for (let y = y0; y <= y1; y++) {
         const planet = this.getPlanetInfo(x, y);
         if (planet) {
-          yield xyToLocation(x,y);
+          yield xyToLocation(x, y);
         }
       }
     }
   }
 
-  async asyncPlanetIdsFromRect(x0: number, y0: number, x1: number, y1: number): Promise<string[]> {
+  async asyncPlanetIdsFromRect(
+    x0: number,
+    y0: number,
+    x1: number,
+    y1: number
+  ): Promise<string[]> {
     const idList = [];
     let i = 0;
     for (const id of this.yieldPlanetIdsFromRect(x0, y0, x1, y1)) {

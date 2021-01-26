@@ -41,11 +41,11 @@ export function xyToLocation(x: number, y: number): string {
   return location;
 }
 
-export function topleftLocationFromArea(area: string): {x: number, y: number} {
+export function topleftLocationFromArea(area: string): {x: number; y: number} {
   const {x: areaX, y: areaY} = locationToXY(area);
   return {
     x: areaX * 24 - 12,
-    y: areaY * 24 - 12
+    y: areaY * 24 - 12,
   };
 }
 
@@ -82,11 +82,11 @@ export function areasArroundLocation(
     xyToLocation(centerAreaX, centerAreaY + 1),
     xyToLocation(centerAreaX, centerAreaY - 1),
 
-    xyToLocation(centerAreaX - 2, centerAreaY -2),
-    xyToLocation(centerAreaX - 1, centerAreaY -2),
-    xyToLocation(centerAreaX, centerAreaY -2),
-    xyToLocation(centerAreaX + 1, centerAreaY -2),
-    xyToLocation(centerAreaX + 2, centerAreaY -2),
+    xyToLocation(centerAreaX - 2, centerAreaY - 2),
+    xyToLocation(centerAreaX - 1, centerAreaY - 2),
+    xyToLocation(centerAreaX, centerAreaY - 2),
+    xyToLocation(centerAreaX + 1, centerAreaY - 2),
+    xyToLocation(centerAreaX + 2, centerAreaY - 2),
 
     xyToLocation(centerAreaX + 2, centerAreaY - 1),
     xyToLocation(centerAreaX + 2, centerAreaY),
@@ -101,7 +101,6 @@ export function areasArroundLocation(
     xyToLocation(centerAreaX - 2, centerAreaY + 1),
     xyToLocation(centerAreaX - 2, centerAreaY),
     xyToLocation(centerAreaX - 2, centerAreaY - 1),
-
   ];
 }
 

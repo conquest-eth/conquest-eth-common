@@ -1,4 +1,3 @@
-
 export type PlanetLocation = {
   id: string;
   x: number; // not needed ?
@@ -22,14 +21,13 @@ export type PlanetInfo = {
   stats: Statistics;
 };
 
-
 export type PlanetContractState = {
   owner: string;
   numSpaceships: number;
   lastUpdated: number;
   active: boolean;
   exitTime: number;
-}
+};
 
 export type PlanetState = {
   owner: string;

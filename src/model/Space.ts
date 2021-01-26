@@ -1,5 +1,5 @@
 import {Planet, PlanetContractState} from '../types';
-import { SpaceInfo } from './SpaceInfo';
+import {SpaceInfo} from './SpaceInfo';
 import {xyToLocation, locationToXY} from '../util/location';
 
 export type PlanetData = PlanetContractState & {id: string};
@@ -8,17 +8,21 @@ export type TimeKeeper = {
   setTimeout: (fn: () => void, sec: number) => number;
   clearTimeout: (t: number) => void;
   getTime: () => number;
-}
+};
 
-export type PlanetFetch = (ids: string[]) => Promise<{discovered: {minX: number; minY: number; maxX: number; maxY: number}, planetStates: PlanetData[]}>
+export type PlanetFetch = (
+  ids: string[]
+) => Promise<{
+  discovered: {minX: number; minY: number; maxX: number; maxY: number};
+  planetStates: PlanetData[];
+}>;
 
 type PlanetRecord = {
   contractState?: PlanetContractState; // TODO optional ?
   planet: Planet;
-}
+};
 
 export class Space {
-
   private planetRecords: Record<string, PlanetRecord | undefined> = {};
   private planetIdsToUpdate: string[] = [];
   // private extraLocations: string[] = [];
@@ -32,13 +36,22 @@ export class Space {
   private x1 = 0;
   private y1 = 0;
 
-  public discovered: {x1: number; y1: number; x2: number; y2: number} = {x1:-1, y1:-1, x2:1, y2:1};
+  public discovered: {x1: number; y1: number; x2: number; y2: number} = {
+    x1: -1,
+    y1: -1,
+    x2: 1,
+    y2: 1,
+  };
 
   private planetListeners: Record<string, number[] | undefined> = {};
   private listenerIndex = 0;
   private listeners: Record<number, (planet: Planet) => void> = {};
 
-  constructor(public spaceInfo: SpaceInfo, private fetch: PlanetFetch, private timeKeeper: TimeKeeper) {
+  constructor(
+    public spaceInfo: SpaceInfo,
+    private fetch: PlanetFetch,
+    private timeKeeper: TimeKeeper
+  ) {
     this._fetchUpdate();
     this._timeBasedUpdate();
   }
@@ -80,17 +93,17 @@ export class Space {
     }
     const planetInfo = this.spaceInfo.getPlanetInfo(x, y);
     if (!planetInfo) {
-      throw new Error(`no planet info for a fetched planet `)
+      throw new Error(`no planet info for a fetched planet `);
     }
     // TODO fetch contract state and add focus
     return {
-        ...planetInfo,
-        state: undefined,
-        loaded: false
+      ...planetInfo,
+      state: undefined,
+      loaded: false,
     };
   }
 
-  onPlannetUpdates(location: string, func: (planet: Planet) => void) : number {
+  onPlannetUpdates(location: string, func: (planet: Planet) => void): number {
     this.listenerIndex++;
     this.listeners[this.listenerIndex] = func;
     let currentListeners = this.planetListeners[location];
@@ -106,18 +119,30 @@ export class Space {
     delete this.listeners[listenerIndex];
   }
 
-
-  focus(locationX0: number, locationY0: number, locationX1: number, locationY1: number): void {
+  focus(
+    locationX0: number,
+    locationY0: number,
+    locationX1: number,
+    locationY1: number
+  ): void {
     this._syncSetupRecords(locationX0, locationY0, locationX1, locationY1);
     if (this.focusTimeout) {
       this.timeKeeper.clearTimeout(this.focusTimeout);
     }
-    this.focusTimeout = this.timeKeeper.setTimeout(() => this._focus(locationX0, locationY0, locationX1, locationY1), 1);
+    this.focusTimeout = this.timeKeeper.setTimeout(
+      () => this._focus(locationX0, locationY0, locationX1, locationY1),
+      1
+    );
   }
 
-  private async _focus(locationX0: number, locationY0: number, locationX1: number, locationY1: number): Promise<void> {
+  private async _focus(
+    locationX0: number,
+    locationY0: number,
+    locationX1: number,
+    locationY1: number
+  ): Promise<void> {
     this.focusTimeout = undefined;
-    console.log("FOCUS", {locationX0, locationY0, locationX1, locationY1})
+    console.log('FOCUS', {locationX0, locationY0, locationX1, locationY1});
     const width = locationX1 - locationX0;
     const height = locationY1 - locationY0;
     this.x0 = Math.floor(locationX0 - width / 2);
@@ -150,7 +175,7 @@ export class Space {
         if (listener) {
           listener(planet);
         } else {
-          listeners.splice(i,1);
+          listeners.splice(i, 1);
           // i--; // TODO check ?
           if (listeners.length === 0) {
             delete this.planetListeners[planetId];
@@ -163,10 +188,16 @@ export class Space {
   skip(): Promise<void> {
     return new Promise<void>((resolve) => {
       this.timeKeeper.setTimeout(resolve, 1);
-    })
+    });
   }
 
-  private _syncSetupRecords(x0: number, y0: number, x1: number, y1: number, extraLocations: string[] = []): string[] {
+  private _syncSetupRecords(
+    x0: number,
+    y0: number,
+    x1: number,
+    y1: number,
+    extraLocations: string[] = []
+  ): string[] {
     const locations = this.spaceInfo.syncFromRect(x0, y0, x1, y1);
     for (const extraLocation of extraLocations) {
       if (locations.indexOf(extraLocation) === -1) {
@@ -179,22 +210,21 @@ export class Space {
     return locations;
   }
 
-
   private _setupRecord(location: string) {
     const planetRecord = this.planetRecords[location];
     if (!planetRecord) {
       const xy = locationToXY(location); // TODO speed up
       const planetInfo = this.spaceInfo.getPlanetInfo(xy.x, xy.y); // TODO getPlanetInfo should take a location ?
       if (!planetInfo) {
-        throw new Error(`no planet infor for a fetched planet `)
+        throw new Error(`no planet infor for a fetched planet `);
       }
       this._setPlanet(location, {
         planet: {
           ...planetInfo,
           state: undefined,
-          loaded: false
-        }
-      })
+          loaded: false,
+        },
+      });
     }
   }
 
@@ -218,10 +248,21 @@ export class Space {
   //   return locations;
   // }
 
-  private async _setupRecords(x0: number, y0: number, x1: number, y1: number, extraLocations: string[] = []): Promise<string[]> {
+  private async _setupRecords(
+    x0: number,
+    y0: number,
+    x1: number,
+    y1: number,
+    extraLocations: string[] = []
+  ): Promise<string[]> {
     // console.log("SETUP RECORDS...", {x0,y0,x1,y1});
     // COMPUTE PLANET INFOS
-    const locations = await this.spaceInfo.asyncPlanetIdsFromRect(x0, y0, x1, y1);
+    const locations = await this.spaceInfo.asyncPlanetIdsFromRect(
+      x0,
+      y0,
+      x1,
+      y1
+    );
     for (const extraLocation of extraLocations) {
       if (locations.indexOf(extraLocation) === -1) {
         locations.push(extraLocation);
@@ -241,14 +282,20 @@ export class Space {
     this.fetchInProgress = true;
     try {
       const extraLocations = Object.keys(this.planetListeners);
-      const locations = this._syncSetupRecords(this.x0, this.y0, this.x1, this.y1, extraLocations); //await this._setupRecords(this.x0, this.y0, this.x1, this.y1, extraLocations);
+      const locations = this._syncSetupRecords(
+        this.x0,
+        this.y0,
+        this.x1,
+        this.y1,
+        extraLocations
+      ); //await this._setupRecords(this.x0, this.y0, this.x1, this.y1, extraLocations);
       // TODO batch grouping :
       // console.log("FETCHING....");
       const result = await this.fetch(locations);
       const planetDatas = result.planetStates;
       const discovered = result.discovered;
-      this.discovered.x1 = - discovered.minX;
-      this.discovered.y1 = - discovered.minY;
+      this.discovered.x1 = -discovered.minX;
+      this.discovered.y1 = -discovered.minY;
       this.discovered.x2 = discovered.maxX;
       this.discovered.y2 = discovered.maxY;
 
@@ -259,7 +306,7 @@ export class Space {
         const location = locations[i];
         const planetDatum = planetDatas[i];
         if (!planetDatum.owner) {
-          console.error(`missing owner for ${location}`)
+          console.error(`missing owner for ${location}`);
         }
         // const queryTime = Math.floor(Date.now() / 1000); // TODO use latest block number for queries
         const contractState = {
@@ -272,13 +319,13 @@ export class Space {
         };
         const planetRecord = this.planetRecords[location];
         if (!planetRecord) {
-          throw new Error(`no planet record for ${location}`)
+          throw new Error(`no planet record for ${location}`);
         }
         planetRecord.contractState = contractState;
         this._setPlanet(location, planetRecord);
         this.planetIdsToUpdate.push(location);
       }
-    } catch(e) {
+    } catch (e) {
       console.error(e);
     }
 
@@ -289,7 +336,10 @@ export class Space {
       delay = 0.01;
     }
     // console.log(`NEW UPDATE in ${delay} s`);
-    this.fetchUpdateTimeout = this.timeKeeper.setTimeout(this._fetchUpdate.bind(this), delay);
+    this.fetchUpdateTimeout = this.timeKeeper.setTimeout(
+      this._fetchUpdate.bind(this),
+      delay
+    );
   }
 
   private _timeBasedUpdate(): void {
@@ -298,12 +348,13 @@ export class Space {
       for (const planetId of this.planetIdsToUpdate) {
         this._updatePlanetRecord(planetId, this.timeKeeper.getTime());
       }
-    } catch( e) {
+    } catch (e) {
       console.error(e);
     }
     this.timeKeeper.setTimeout(this._timeBasedUpdate.bind(this), 1);
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   protected isCapturing(planetId: string): boolean {
     return false;
   }
@@ -311,7 +362,7 @@ export class Space {
   private _updatePlanetRecord(planetId: string, time: number): void {
     const planetRecord = this.planetRecords[planetId];
     if (!planetRecord) {
-      throw new Error(`no planet record for ${planetId}`)
+      throw new Error(`no planet record for ${planetId}`);
     }
 
     const contractState = planetRecord.contractState;
@@ -324,17 +375,27 @@ export class Space {
     let active = contractState.active;
     let numSpaceships = contractState.numSpaceships;
     let exiting = !!contractState.exitTime;
-    let exitTimeLeft = this.spaceInfo.exitDuration - (time - contractState.exitTime);
+    let exitTimeLeft =
+      this.spaceInfo.exitDuration - (time - contractState.exitTime);
     const natives = contractState.lastUpdated == 0;
-    if (contractState.exitTime > 0 && time > contractState.exitTime + this.spaceInfo.exitDuration) {
+    if (
+      contractState.exitTime > 0 &&
+      time > contractState.exitTime + this.spaceInfo.exitDuration
+    ) {
       // exited
       numSpaceships = 0;
-      owner = "0x0000000000000000000000000000000000000000";
+      owner = '0x0000000000000000000000000000000000000000';
       active = false;
       exiting = false;
       exitTimeLeft = 0;
     } else if (contractState.active) {
-      numSpaceships = contractState.numSpaceships + (Math.floor(((time - contractState.lastUpdated) * planetRecord.planet.stats.production) / (60 * 60)));
+      numSpaceships =
+        contractState.numSpaceships +
+        Math.floor(
+          ((time - contractState.lastUpdated) *
+            planetRecord.planet.stats.production) /
+            (60 * 60)
+        );
     } else if (natives) {
       numSpaceships = planetRecord.planet.stats.natives; // TODO show num Natives
     }
@@ -346,7 +407,13 @@ export class Space {
     if (!planetRecord.planet.state) {
       planetRecord.planet.loaded = true;
       planetRecord.planet.state = {
-        owner, active, numSpaceships, exiting, exitTimeLeft, natives, capturing
+        owner,
+        active,
+        numSpaceships,
+        exiting,
+        exitTimeLeft,
+        natives,
+        capturing,
       };
     } else {
       planetRecord.planet.state.owner = owner;
@@ -361,6 +428,4 @@ export class Space {
 
     this._callListeners(planetId, planetRecord.planet);
   }
-
 }
-
