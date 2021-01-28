@@ -1,5 +1,5 @@
 import type {PlanetInfo} from '../types';
-import {Random} from '../util/Random';
+import {keccak256} from '@ethersproject/solidity';
 import {
   LocationPointer,
   nextInSpiral,
@@ -8,6 +8,7 @@ import {
   xyToLocation,
   topleftLocationFromArea,
 } from '../util/location';
+import {normal16, normal8, value8Mod} from '../util/extraction';
 
 function skip(): Promise<void> {
   return new Promise<void>((resolve) => {
@@ -16,7 +17,7 @@ function skip(): Promise<void> {
 }
 
 export class SpaceInfo {
-  private genesis: Random;
+  private genesis: string;
   private cache: {[id: string]: PlanetInfo | null} = {};
   private planetIdsInArea: {[zoneId: string]: string[]} = {};
 
@@ -33,7 +34,7 @@ export class SpaceInfo {
     this.resolveWindow = config.resolveWindow;
     this.timePerDistance = Math.floor(config.timePerDistance / 4); // Same as in OuterSpace.sol: the coordinates space is 4 times bigger
     this.exitDuration = config.exitDuration;
-    this.genesis = new Random(config.genesisHash);
+    this.genesis = config.genesisHash;
   }
 
   computeArea(areaId: string): void {
@@ -162,37 +163,38 @@ export class SpaceInfo {
       }
       return inCache;
     }
-    const _genesis = this.genesis;
 
     const location = xyToLocation(x, y);
 
-    const hasPlanet = _genesis.r_u8(location, 1, 16) == 1;
+    const data = keccak256(['bytes32', 'uint256'], [this.genesis, location]);
+
+    const hasPlanet = value8Mod(data, 52, 16) == 1;
     if (!hasPlanet) {
       this.cache[id] = null;
       return undefined;
     }
 
-    const subX = 1 - _genesis.r_u8(location, 2, 3);
-    const subY = 1 - _genesis.r_u8(location, 3, 3);
+    const subX = 1 - value8Mod(data, 0, 3);
+    const subY = 1 - value8Mod(data, 2, 3);
 
-    const stake = _genesis.r_normalFrom(
-      location,
+    const stake = normal16(
+      data,
       4,
       '0x0001000200030004000500070009000A000A000C000F00140019001E00320064'
     );
-    const production = _genesis.r_normalFrom(
-      location,
-      5,
+    const production = normal16(
+      data,
+      12,
       '0x0708083409600a8c0bb80ce40e100e100e100e101068151819c81e7823282ee0'
     );
-    const attack = 4000 + _genesis.r_normal(location, 6) * 400;
-    const defense = 4000 + _genesis.r_normal(location, 7) * 400;
-    const speed = 4090 + _genesis.r_normal(location, 8) * 334;
-    const natives = 2000 + _genesis.r_normal(location, 9) * 100;
+    const attack = 4000 + normal8(data, 20) * 400;
+    const defense = 4000 + normal8(data, 28) * 400;
+    const speed = 4090 + normal8(data, 36) * 334;
+    const natives = 2000 + normal8(data, 44) * 100;
 
-    const type = _genesis.r_u8(location, 255, 23);
+    const type = value8Mod(data, 60, 23);
 
-    const data = {
+    const planetObj = {
       location: {
         id: location,
         x,
@@ -212,8 +214,8 @@ export class SpaceInfo {
         subY,
       },
     };
-    this.cache[id] = data;
-    return data;
+    this.cache[id] = planetObj;
+    return planetObj;
   }
 
   findNextPlanet(
