@@ -9,6 +9,8 @@ import {
   topleftLocationFromArea,
 } from '../util/location';
 import {normal16, normal8, value8Mod} from '../util/extraction';
+import {uniqueName} from '../../../lib/random/uniqueName';
+import {BigNumber} from '@ethersproject/bignumber';
 
 function skip(): Promise<void> {
   return new Promise<void>((resolve) => {
@@ -24,6 +26,7 @@ export class SpaceInfo {
   public resolveWindow: number;
   public timePerDistance: number;
   public exitDuration: number;
+  public stakeMultiplier: BigNumber;
 
   constructor(config: {
     genesisHash: string;
@@ -35,6 +38,7 @@ export class SpaceInfo {
     this.timePerDistance = Math.floor(config.timePerDistance / 4); // Same as in OuterSpace.sol: the coordinates space is 4 times bigger
     this.exitDuration = config.exitDuration;
     this.genesis = config.genesisHash;
+    this.stakeMultiplier = BigNumber.from('5000000000000000000'); // TODO
   }
 
   computeArea(areaId: string): void {
@@ -187,12 +191,20 @@ export class SpaceInfo {
       12,
       '0x0708083409600a8c0bb80ce40e100e100e100e101068151819c81e7823282ee0'
     );
-    const attack = 4000 + normal8(data, 20) * 400;
-    const defense = 4000 + normal8(data, 28) * 400;
-    const speed = 4090 + normal8(data, 36) * 334;
+    const attackRoll = normal8(data, 20);
+    const attack = 4000 + attackRoll * 400;
+    const defenseRoll = normal8(data, 28);
+    const defense = 4000 + defenseRoll * 400;
+    const speedRoll = normal8(data, 36);
+    const speed = 5005 + speedRoll * 333;
     const natives = 2000 + normal8(data, 44) * 100;
 
-    const type = value8Mod(data, 60, 23);
+    // const type = value8Mod(data, 60, 23);
+    const attackGrade = attackRoll < 6 ? 0 : attackRoll < 10 ? 1 : 2;
+    const defenseGrade = attackRoll < 6 ? 0 : defenseRoll < 10 ? 1 : 2;
+    const speedGrade = attackRoll < 6 ? 0 : speedRoll < 10 ? 1 : 2;
+
+    const type = attackGrade * 9 + defenseGrade * 3 + speedGrade;
 
     const planetObj = {
       location: {
