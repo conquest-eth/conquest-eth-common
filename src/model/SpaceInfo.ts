@@ -9,7 +9,6 @@ import {
   topleftLocationFromArea,
 } from '../util/location';
 import {normal16, normal8, value8Mod} from '../util/extraction';
-import {uniqueName} from '../../../lib/random/uniqueName';
 import {BigNumber} from '@ethersproject/bignumber';
 
 function skip(): Promise<void> {
