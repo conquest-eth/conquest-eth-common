@@ -215,6 +215,7 @@ export class SpaceInfo {
       },
       type,
       stats: {
+        name: 'todo',
         stake,
         production,
         attack,

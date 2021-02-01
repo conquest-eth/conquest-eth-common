@@ -1,5 +1,5 @@
-import {Planet, PlanetContractState} from '../types';
-import {SpaceInfo} from './SpaceInfo';
+import type {Planet, PlanetContractState} from '../types';
+import type {SpaceInfo} from './SpaceInfo';
 import {xyToLocation, locationToXY} from '../util/location';
 
 export type PlanetData = PlanetContractState & {id: string};
@@ -37,10 +37,10 @@ export class Space {
   private y1 = 0;
 
   public discovered: {x1: number; y1: number; x2: number; y2: number} = {
-    x1: -1,
-    y1: -1,
-    x2: 1,
-    y2: 1,
+    x1: 0,
+    y1: 0,
+    x2: 0,
+    y2: 0,
   };
 
   private planetListeners: Record<string, number[] | undefined> = {};
@@ -370,6 +370,11 @@ export class Space {
       // SKIP UNTIL THERE IS A CONTRACT STATE TO COMPUTE PREDICTED VALUES FROM TIME
       return;
     }
+    const inReach =
+      planetRecord.planet.location.x >= this.discovered.x1 &&
+      planetRecord.planet.location.x <= this.discovered.x2 &&
+      planetRecord.planet.location.y >= this.discovered.y1 &&
+      planetRecord.planet.location.y <= this.discovered.y2;
     let capturing = false;
     let owner = contractState.owner;
     let active = contractState.active;
@@ -414,6 +419,7 @@ export class Space {
         exitTimeLeft,
         natives,
         capturing,
+        inReach,
       };
     } else {
       planetRecord.planet.state.owner = owner;
@@ -423,7 +429,7 @@ export class Space {
       planetRecord.planet.state.exitTimeLeft = exitTimeLeft;
       planetRecord.planet.state.natives = natives;
       planetRecord.planet.state.capturing = capturing;
-      // planetRecord.planet.state.outOfReach = // TODO
+      planetRecord.planet.state.inReach = inReach;
     }
 
     this._callListeners(planetId, planetRecord.planet);
