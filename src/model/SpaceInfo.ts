@@ -195,7 +195,7 @@ export class SpaceInfo {
     const defense = 4000 + defenseRoll * 400;
     const speedRoll = normal8(data, 36);
     const speed = 5005 + speedRoll * 333;
-    const natives = 12500 + normal8(data, 44) * 2500;
+    const natives = 15000 + normal8(data, 44) * 3000;
 
     // const type = value8Mod(data, 60, 23);
     const attackGrade = attackRoll < 6 ? 0 : attackRoll < 10 ? 1 : 2;
