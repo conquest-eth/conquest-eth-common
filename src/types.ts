@@ -60,6 +60,7 @@ export type Fleet = {
   from: Position;
   fleetAmount: number; // not needed to store, except to not require contract fetch
   launchTime: number; // a bit needed until fleet is fetchable from contract
+  actualLaunchTime?: number;
   duration: number; // not needed to store, except to not require computing stats from from planet
   owner: string; // not needed at all to store : TODO remove ?
   secret: string; // needed

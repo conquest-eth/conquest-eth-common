@@ -1,6 +1,12 @@
-import type {Planet, PlanetContractState} from '../types';
+import type {
+  Planet,
+  PlanetContractState,
+  PlanetState,
+  Position,
+} from '../types';
 import type {SpaceInfo} from './SpaceInfo';
 import {xyToLocation, locationToXY} from '../util/location';
+import {BigNumber} from '@ethersproject/bignumber';
 
 export type PlanetData = PlanetContractState & {id: string};
 
@@ -75,6 +81,102 @@ export class Space {
   //   return undefined;
   // }
 
+  timeLeft(
+    time: number,
+    from: Position,
+    to: Position,
+    startTime: number
+  ): {timeLeft: number; timePassed: number; fullTime: number} {
+    const fromPlanet = this.ensurePlanetAt(from.x, from.y);
+    const toPlanet = this.ensurePlanetAt(to.x, to.y);
+    const gFromX = fromPlanet.location.globalX;
+    const gFromY = fromPlanet.location.globalY;
+    const gToX = toPlanet.location.globalX;
+    const gToY = toPlanet.location.globalY;
+    const speed = fromPlanet.stats.speed;
+    const fullDistance = Math.floor(
+      Math.sqrt(Math.pow(gToX - gFromX, 2) + Math.pow(gToY - gFromY, 2))
+    );
+    const fullTime =
+      fullDistance * ((this.spaceInfo.timePerDistance * 10000) / speed);
+    const timePassed = time - startTime;
+    const timeLeft = fullTime - timePassed;
+    return {timeLeft, timePassed, fullTime};
+  }
+
+  timeToArrive(
+    planetFrom: {location: Position},
+    planetTo: {location: Position}
+  ): number {
+    return this.timeLeft(0, planetFrom.location, planetTo.location, 0).timeLeft;
+  }
+  numSpaceshipsAtArrival(
+    planetFrom: Planet,
+    planetTo: Planet & {state: PlanetState}
+  ): number {
+    const duration = this.timeToArrive(planetFrom, planetTo);
+    // TODO extract
+    const numSpaceships = planetTo.state.numSpaceships;
+
+    if (!planetTo.state.active) {
+      return numSpaceships;
+    }
+
+    return (
+      numSpaceships +
+      Math.floor((duration * planetTo.stats.production) / (60 * 60))
+    );
+  }
+  outcome(
+    planetFrom: Planet & {state: PlanetState},
+    planetTo: Planet & {state: PlanetState},
+    fleetAmount: number
+  ): {captured: boolean; numSpaceshipsLeft: number} {
+    const numDefense = BigNumber.from(
+      this.numSpaceshipsAtArrival(planetFrom, planetTo)
+    );
+    const numAttack = BigNumber.from(fleetAmount);
+
+    // TODO extract combat rule
+    const attackPower = numAttack.mul(planetFrom.stats.attack);
+    const defensePower = numDefense.mul(planetTo.stats.defense);
+
+    let numAttackRound = numDefense.mul(100000000).div(attackPower);
+    if (numAttackRound.mul(attackPower).lt(numDefense.mul(100000000))) {
+      numAttackRound = numAttackRound.add(1);
+    }
+    let numDefenseRound = numAttack.mul(100000000).div(defensePower);
+    if (numDefenseRound.mul(defensePower).lt(numAttack.mul(100000000))) {
+      numDefenseRound = numDefenseRound.add(1);
+    }
+
+    let numRound = numAttackRound;
+    if (numDefenseRound.lt(numRound)) {
+      numRound = numDefenseRound;
+    }
+    let attackerLoss = numRound.mul(defensePower).div(100000000);
+    if (numAttack.lt(attackerLoss)) {
+      attackerLoss = numAttack;
+    }
+    let defenderLoss = numRound.mul(attackPower).div(100000000);
+    if (numDefense.lt(defenderLoss)) {
+      defenderLoss = numDefense;
+    }
+
+    if (attackerLoss.eq(numAttack)) {
+      return {
+        captured: false,
+        numSpaceshipsLeft: planetTo.state.natives
+          ? planetTo.stats.natives
+          : numDefense.sub(defenderLoss).toNumber(),
+      };
+    }
+    return {
+      captured: true,
+      numSpaceshipsLeft: numAttack.sub(attackerLoss).toNumber(),
+    };
+  }
+
   planetAt(x: number, y: number): Planet | undefined {
     const location = xyToLocation(x, y); // TODO speed up ?
     const planetRecord = this.planetRecords[location];
@@ -82,6 +184,22 @@ export class Space {
       return planetRecord.planet;
     }
     return undefined;
+  }
+
+  prediction(
+    planetFrom: Planet & {state: PlanetState},
+    planetTo: Planet & {state: PlanetState},
+    fleetAmount: number
+  ): {
+    arrivalTime: number;
+    numSpaceshipsAtArrival: number;
+    outcome: {captured: boolean; numSpaceshipsLeft: number};
+  } {
+    return {
+      arrivalTime: this.timeToArrive(planetFrom, planetTo),
+      numSpaceshipsAtArrival: this.numSpaceshipsAtArrival(planetFrom, planetTo),
+      outcome: this.outcome(planetFrom, planetTo, fleetAmount),
+    };
   }
 
   ensurePlanetAt(x: number, y: number): Planet {
@@ -308,7 +426,7 @@ export class Space {
         if (!planetDatum.owner) {
           console.error(`missing owner for ${location}`);
         }
-        // const queryTime = Math.floor(Date.now() / 1000); // TODO use latest block number for queries
+        // const queryTime = now(); // TODO use latest block number for queries
         const contractState = {
           owner: planetDatum.owner,
           exitTime: planetDatum.exitTime,

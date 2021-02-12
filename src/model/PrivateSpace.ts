@@ -1,6 +1,6 @@
-import {OwnFleet} from '../types';
+import type {OwnFleet} from '../types';
 import {PlanetFetch, Space, TimeKeeper} from './Space';
-import {SpaceInfo} from './SpaceInfo';
+import type {SpaceInfo} from './SpaceInfo';
 
 export class PrivateSpace extends Space {
   constructor(

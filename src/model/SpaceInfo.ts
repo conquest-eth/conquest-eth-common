@@ -9,7 +9,7 @@ import {
   topleftLocationFromArea,
 } from '../util/location';
 import {normal16, normal8, value8Mod} from '../util/extraction';
-import {BigNumber} from '@ethersproject/bignumber';
+// import {uniqueName} from '../../../lib/random/uniqueName';
 
 function skip(): Promise<void> {
   return new Promise<void>((resolve) => {
@@ -25,7 +25,6 @@ export class SpaceInfo {
   public resolveWindow: number;
   public timePerDistance: number;
   public exitDuration: number;
-  public stakeMultiplier: BigNumber;
 
   constructor(config: {
     genesisHash: string;
@@ -37,7 +36,6 @@ export class SpaceInfo {
     this.timePerDistance = Math.floor(config.timePerDistance / 4); // Same as in OuterSpace.sol: the coordinates space is 4 times bigger
     this.exitDuration = config.exitDuration;
     this.genesis = config.genesisHash;
-    this.stakeMultiplier = BigNumber.from('1000000000000000000');
   }
 
   computeArea(areaId: string): void {
@@ -180,11 +178,12 @@ export class SpaceInfo {
     const subX = 1 - value8Mod(data, 0, 3);
     const subY = 1 - value8Mod(data, 2, 3);
 
-    const stake = normal16(
-      data,
-      4,
-      '0x0001000200030004000500070009000A000A000C000F00140019001E00320064'
-    );
+    const stake =
+      normal16(
+        data,
+        4,
+        '0x000400050005000A000A000F000F00140014001E001E00280028005000500064'
+      );
     const production = normal16(
       data,
       12,
@@ -196,14 +195,16 @@ export class SpaceInfo {
     const defense = 4000 + defenseRoll * 400;
     const speedRoll = normal8(data, 36);
     const speed = 5005 + speedRoll * 333;
-    const natives = 2000 + normal8(data, 44) * 100;
+    const natives = 12500 + normal8(data, 44) * 2500;
 
     // const type = value8Mod(data, 60, 23);
     const attackGrade = attackRoll < 6 ? 0 : attackRoll < 10 ? 1 : 2;
-    const defenseGrade = attackRoll < 6 ? 0 : defenseRoll < 10 ? 1 : 2;
-    const speedGrade = attackRoll < 6 ? 0 : speedRoll < 10 ? 1 : 2;
+    const defenseGrade = defenseRoll < 6 ? 0 : defenseRoll < 10 ? 1 : 2;
+    const speedGrade = speedRoll < 6 ? 0 : speedRoll < 10 ? 1 : 2;
 
     const type = attackGrade * 9 + defenseGrade * 3 + speedGrade;
+
+    const name = ''; //uniqueName(2, location);
 
     const planetObj = {
       location: {
@@ -215,7 +216,7 @@ export class SpaceInfo {
       },
       type,
       stats: {
-        name: 'todo',
+        name,
         stake,
         production,
         attack,
