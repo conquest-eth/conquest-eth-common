@@ -37,7 +37,7 @@ export class SpaceInfo {
     this.timePerDistance = Math.floor(config.timePerDistance / 4); // Same as in OuterSpace.sol: the coordinates space is 4 times bigger
     this.exitDuration = config.exitDuration;
     this.genesis = config.genesisHash;
-    this.stakeMultiplier = BigNumber.from('5000000000000000000'); // TODO
+    this.stakeMultiplier = BigNumber.from('1000000000000000000');
   }
 
   computeArea(areaId: string): void {
