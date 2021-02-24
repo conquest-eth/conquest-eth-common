@@ -7,6 +7,11 @@ export type PlanetLocation = {
   globalY: number;
 };
 
+export type TxStatus = {
+  finalized: boolean;
+  status: 'Pending' | 'Success' | 'Cancelled' | 'Failure' | 'Mined';
+};
+
 // object describing the static attributes of a planet // do not change
 export type Statistics = {
   name: string;
@@ -42,7 +47,7 @@ export type PlanetState = {
   exiting: boolean;
   exitTimeLeft: number;
   natives: boolean;
-  capturing: boolean;
+  capturing: TxStatus | null | 'Loading';
   inReach: boolean;
 };
 
@@ -63,7 +68,6 @@ export type Fleet = {
   actualLaunchTime?: number;
   duration: number; // not needed to store, except to not require computing stats from from planet
   owner: string; // not needed at all to store : TODO remove ?
-  secret: string; // needed
 };
 
 // object representing a fleet with private info to resolve its attack/sending
@@ -71,6 +75,7 @@ export type OwnFleet = Fleet & {
   to: Position;
   resolveTxHash?: string;
   sendTxHash: string;
+  secret: string; // needed
 };
 
 // export type OwnedFleetStored = {

@@ -1,4 +1,4 @@
-import type {OwnFleet} from '../types';
+import type {OwnFleet, TxStatus} from '../types';
 import {PlanetFetch, Space, TimeKeeper} from './Space';
 import type {SpaceInfo} from './SpaceInfo';
 
@@ -11,7 +11,7 @@ export class PrivateSpace extends Space {
       walletAddress?: string;
       getFleets(): OwnFleet[];
       isTxPerformed(txHash?: string): boolean;
-      isCapturing(location: string): boolean;
+      capturingStatus(location: string): TxStatus | null | 'Loading';
     }
   ) {
     super(spaceInfo, fetch, timeKeeper);
@@ -27,8 +27,8 @@ export class PrivateSpace extends Space {
     return this.privateAccount.isTxPerformed(txHash);
   }
 
-  isCapturing(planetId: string): boolean {
-    return this.privateAccount.isCapturing(planetId);
+  capturingStatus(planetId: string): TxStatus | null | 'Loading' {
+    return this.privateAccount.capturingStatus(planetId);
   }
   // getFleetsFrom(x: number, y: number): Fleet[] {
   //   return []; // TODO filter getFleets()

@@ -9,7 +9,7 @@ import {
   topleftLocationFromArea,
 } from '../util/location';
 import {normal16, normal8, value8Mod} from '../util/extraction';
-// import {uniqueName} from '../../../lib/random/uniqueName';
+import {uniqueName} from '../util/random/uniqueName';
 
 function skip(): Promise<void> {
   return new Promise<void>((resolve) => {
@@ -178,12 +178,11 @@ export class SpaceInfo {
     const subX = 1 - value8Mod(data, 0, 3);
     const subY = 1 - value8Mod(data, 2, 3);
 
-    const stake =
-      normal16(
-        data,
-        4,
-        '0x000400050005000A000A000F000F00140014001E001E00280028005000500064'
-      );
+    const stake = normal16(
+      data,
+      4,
+      '0x000400050005000A000A000F000F00140014001E001E00280028005000500064'
+    );
     const production = normal16(
       data,
       12,
@@ -204,7 +203,7 @@ export class SpaceInfo {
 
     const type = attackGrade * 9 + defenseGrade * 3 + speedGrade;
 
-    const name = ''; //uniqueName(2, location);
+    const name = uniqueName(2, location);
 
     const planetObj = {
       location: {
