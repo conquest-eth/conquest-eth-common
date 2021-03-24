@@ -178,11 +178,40 @@ export class SpaceInfo {
     const subX = 1 - value8Mod(data, 0, 3);
     const subY = 1 - value8Mod(data, 2, 3);
 
-    const stake = normal16(
+    const stakeRange = [
+      4,
+      5,
+      5,
+      10,
+      10,
+      15,
+      15,
+      20,
+      20,
+      30,
+      30,
+      40,
+      40,
+      80,
+      80,
+      100,
+    ];
+    const productionIndex = normal8(data, 12);
+    const offset = normal16(
       data,
       4,
-      '0x000400050005000A000A000F000F00140014001E001E00280028005000500064'
+      '0x0000000100010002000200030003000400040005000500060006000700070008'
     );
+    let stakeIndex = productionIndex + offset;
+    if (stakeIndex < 4) {
+      stakeIndex = 0;
+    } else if (stakeIndex > 19) {
+      stakeIndex = 15;
+    } else {
+      stakeIndex -= 4;
+    }
+    const stake = stakeRange[stakeIndex];
+
     const production = normal16(
       data,
       12,
