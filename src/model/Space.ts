@@ -104,7 +104,9 @@ export class Space {
       return numSpaceships;
     }
 
-    return numSpaceships + Math.floor((duration * planetTo.stats.production) / (60 * 60));
+    return (
+      numSpaceships + Math.floor((duration * planetTo.stats.production * this.spaceInfo.productionSpeedUp) / (60 * 60))
+    );
   }
   outcome(
     planetFrom: Planet & {state: PlanetState},
@@ -466,7 +468,12 @@ export class Space {
     } else if (contractState.active) {
       numSpaceships =
         contractState.numSpaceships +
-        Math.floor(((time - contractState.lastUpdated) * planetRecord.planet.stats.production) / (60 * 60));
+        Math.floor(
+          ((time - contractState.lastUpdated) *
+            planetRecord.planet.stats.production *
+            this.spaceInfo.productionSpeedUp) /
+            (60 * 60)
+        );
     } else if (natives) {
       numSpaceships = planetRecord.planet.stats.natives; // TODO show num Natives
     }

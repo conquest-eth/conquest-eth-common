@@ -25,11 +25,19 @@ export class SpaceInfo {
   public resolveWindow: number;
   public timePerDistance: number;
   public exitDuration: number;
+  public productionSpeedUp: number;
 
-  constructor(config: {genesisHash: string; resolveWindow: number; timePerDistance: number; exitDuration: number}) {
+  constructor(config: {
+    genesisHash: string;
+    resolveWindow: number;
+    timePerDistance: number;
+    exitDuration: number;
+    productionSpeedUp: number;
+  }) {
     this.resolveWindow = config.resolveWindow;
     this.timePerDistance = Math.floor(config.timePerDistance / 4); // Same as in OuterSpace.sol: the coordinates space is 4 times bigger
     this.exitDuration = config.exitDuration;
+    this.productionSpeedUp = config.productionSpeedUp;
     this.genesis = config.genesisHash;
   }
 
