@@ -47,7 +47,7 @@ export type PlanetState = {
   exiting: boolean;
   exitTimeLeft: number;
   natives: boolean;
-  capturing: TxStatus | null | 'Loading';
+  capturing: (TxStatus & {txHash: string}) | null | 'Loading';
   inReach: boolean;
 };
 
@@ -73,41 +73,8 @@ export type Fleet = {
 // object representing a fleet with private info to resolve its attack/sending
 export type OwnFleet = Fleet & {
   to: Position;
-  resolveTxHash?: string;
-  sendTxHash: string;
-  secret: string; // needed
+  resolveTx?: {hash: string; nonce: number}; // TODO time ?
+  toDelete?: boolean;
+  sendTx: {hash: string; nonce: number}; // TODO time ?
+  updatedAt: number;
 };
-
-// export type OwnedFleetStored = {
-//   to: Position;
-//   secret: string;
-//   sendTxHash: string;
-//   sendTime: number;
-
-//   resolveTxHash?: string;
-
-//   from: Position;
-//   launchTime?: number;
-// };
-
-// export type PFllet = OwnedFleetStored & {
-//   timeLeft: number; // updated
-// };
-
-// to consider:
-// export type Fleet = {
-//   from: Position;
-//   fleetAmount: number;
-//   launchTime?: number;
-//   duration: number;
-//   owner: string;
-// };
-
-// export type OwnFleet = Fleet & {
-//   to: Position;
-//   resolveTxHash?: string;
-//   sendTxHash: string;
-//   sendTime: number;
-//   secret: string; // needed
-//   timeLeft: number;
-// };

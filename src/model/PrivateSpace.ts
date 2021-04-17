@@ -10,8 +10,11 @@ export class PrivateSpace extends Space {
     private privateAccount: {
       walletAddress?: string;
       getFleets(): OwnFleet[];
-      isTxPerformed(txHash?: string): boolean;
-      capturingStatus(location: string): TxStatus | null | 'Loading';
+      getExit(location: string): {txHash: string} | undefined;
+      txStatus(txHash: string): TxStatus | null | 'Loading';
+      capturingStatus(
+        location: string
+      ): (TxStatus & {txHash: string}) | null | 'Loading';
     }
   ) {
     super(spaceInfo, fetch, timeKeeper);
@@ -23,11 +26,17 @@ export class PrivateSpace extends Space {
     return this.privateAccount.getFleets();
   }
 
-  isTxPerformed(txHash?: string): boolean {
-    return this.privateAccount.isTxPerformed(txHash);
+  getExit(location: string): {txHash: string} | undefined {
+    return this.privateAccount.getExit(location);
   }
 
-  capturingStatus(planetId: string): TxStatus | null | 'Loading' {
+  txStatus(txHash: string): TxStatus | null | 'Loading' {
+    return this.privateAccount.txStatus(txHash);
+  }
+
+  capturingStatus(
+    planetId: string
+  ): (TxStatus & {txHash: string}) | null | 'Loading' {
     return this.privateAccount.capturingStatus(planetId);
   }
   // getFleetsFrom(x: number, y: number): Fleet[] {

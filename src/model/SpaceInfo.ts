@@ -9,7 +9,7 @@ import {
   topleftLocationFromArea,
 } from '../util/location';
 import {normal16, normal8, value8Mod} from '../util/extraction';
-import {uniqueName} from '../util/random/uniqueName';
+import {uniqueName} from '../random/uniqueName'; // TODO in common
 
 function skip(): Promise<void> {
   return new Promise<void>((resolve) => {
@@ -26,12 +26,7 @@ export class SpaceInfo {
   public timePerDistance: number;
   public exitDuration: number;
 
-  constructor(config: {
-    genesisHash: string;
-    resolveWindow: number;
-    timePerDistance: number;
-    exitDuration: number;
-  }) {
+  constructor(config: {genesisHash: string; resolveWindow: number; timePerDistance: number; exitDuration: number}) {
     this.resolveWindow = config.resolveWindow;
     this.timePerDistance = Math.floor(config.timePerDistance / 4); // Same as in OuterSpace.sol: the coordinates space is 4 times bigger
     this.exitDuration = config.exitDuration;
@@ -121,12 +116,7 @@ export class SpaceInfo {
     return ids;
   }
 
-  *yieldPlanetIdsFromRect(
-    x0: number,
-    y0: number,
-    x1: number,
-    y1: number
-  ): Generator<string, void> {
+  *yieldPlanetIdsFromRect(x0: number, y0: number, x1: number, y1: number): Generator<string, void> {
     for (let x = x0; x <= x1; x++) {
       for (let y = y0; y <= y1; y++) {
         const planet = this.getPlanetInfo(x, y);
@@ -137,12 +127,7 @@ export class SpaceInfo {
     }
   }
 
-  async asyncPlanetIdsFromRect(
-    x0: number,
-    y0: number,
-    x1: number,
-    y1: number
-  ): Promise<string[]> {
+  async asyncPlanetIdsFromRect(x0: number, y0: number, x1: number, y1: number): Promise<string[]> {
     const idList = [];
     let i = 0;
     for (const id of this.yieldPlanetIdsFromRect(x0, y0, x1, y1)) {
@@ -178,30 +163,9 @@ export class SpaceInfo {
     const subX = 1 - value8Mod(data, 0, 3);
     const subY = 1 - value8Mod(data, 2, 3);
 
-    const stakeRange = [
-      4,
-      5,
-      5,
-      10,
-      10,
-      15,
-      15,
-      20,
-      20,
-      30,
-      30,
-      40,
-      40,
-      80,
-      80,
-      100,
-    ];
+    const stakeRange = [4, 5, 5, 10, 10, 15, 15, 20, 20, 30, 30, 40, 40, 80, 80, 100];
     const productionIndex = normal8(data, 12);
-    const offset = normal16(
-      data,
-      4,
-      '0x0000000100010002000200030003000400040005000500060006000700070008'
-    );
+    const offset = normal16(data, 4, '0x0000000100010002000200030003000400040005000500060006000700070008');
     let stakeIndex = productionIndex + offset;
     if (stakeIndex < 4) {
       stakeIndex = 0;
@@ -212,11 +176,7 @@ export class SpaceInfo {
     }
     const stake = stakeRange[stakeIndex];
 
-    const production = normal16(
-      data,
-      12,
-      '0x0708083409600a8c0bb80ce40e100e100e100e101068151819c81e7823282ee0'
-    );
+    const production = normal16(data, 12, '0x0708083409600a8c0bb80ce40e100e100e100e101068151819c81e7823282ee0');
     const attackRoll = normal8(data, 20);
     const attack = 4000 + attackRoll * 400;
     const defenseRoll = normal8(data, 28);

@@ -1,10 +1,4 @@
-import type {
-  Planet,
-  PlanetContractState,
-  PlanetState,
-  Position,
-  TxStatus,
-} from '../types';
+import type {Planet, PlanetContractState, PlanetState, Position, TxStatus} from '../types';
 import type {SpaceInfo} from './SpaceInfo';
 import {xyToLocation, locationToXY} from '../util/location';
 import {BigNumber} from '@ethersproject/bignumber';
@@ -54,12 +48,8 @@ export class Space {
   private listenerIndex = 0;
   private listeners: Record<number, (planet: Planet) => void> = {};
 
-  constructor(
-    public spaceInfo: SpaceInfo,
-    private fetch: PlanetFetch,
-    private timeKeeper: TimeKeeper
-  ) {
-    this._fetchUpdate();
+  constructor(public spaceInfo: SpaceInfo, private fetch: PlanetFetch, private timeKeeper: TimeKeeper) {
+    // this._fetchUpdate(); // TODO delete, do not trigger in constructor, when in agent no need to do it for example
     this._timeBasedUpdate();
   }
 
@@ -95,26 +85,17 @@ export class Space {
     const gToX = toPlanet.location.globalX;
     const gToY = toPlanet.location.globalY;
     const speed = fromPlanet.stats.speed;
-    const fullDistance = Math.floor(
-      Math.sqrt(Math.pow(gToX - gFromX, 2) + Math.pow(gToY - gFromY, 2))
-    );
-    const fullTime =
-      fullDistance * ((this.spaceInfo.timePerDistance * 10000) / speed);
+    const fullDistance = Math.floor(Math.sqrt(Math.pow(gToX - gFromX, 2) + Math.pow(gToY - gFromY, 2)));
+    const fullTime = fullDistance * ((this.spaceInfo.timePerDistance * 10000) / speed);
     const timePassed = time - startTime;
     const timeLeft = fullTime - timePassed;
     return {timeLeft, timePassed, fullTime};
   }
 
-  timeToArrive(
-    planetFrom: {location: Position},
-    planetTo: {location: Position}
-  ): number {
+  timeToArrive(planetFrom: {location: Position}, planetTo: {location: Position}): number {
     return this.timeLeft(0, planetFrom.location, planetTo.location, 0).timeLeft;
   }
-  numSpaceshipsAtArrival(
-    planetFrom: Planet,
-    planetTo: Planet & {state: PlanetState}
-  ): number {
+  numSpaceshipsAtArrival(planetFrom: Planet, planetTo: Planet & {state: PlanetState}): number {
     const duration = this.timeToArrive(planetFrom, planetTo);
     // TODO extract
     const numSpaceships = planetTo.state.numSpaceships;
@@ -123,20 +104,22 @@ export class Space {
       return numSpaceships;
     }
 
-    return (
-      numSpaceships +
-      Math.floor((duration * planetTo.stats.production) / (60 * 60))
-    );
+    return numSpaceships + Math.floor((duration * planetTo.stats.production) / (60 * 60));
   }
   outcome(
     planetFrom: Planet & {state: PlanetState},
     planetTo: Planet & {state: PlanetState},
     fleetAmount: number
   ): {captured: boolean; numSpaceshipsLeft: number} {
-    const numDefense = BigNumber.from(
-      this.numSpaceshipsAtArrival(planetFrom, planetTo)
-    );
+    const numDefense = BigNumber.from(this.numSpaceshipsAtArrival(planetFrom, planetTo));
     const numAttack = BigNumber.from(fleetAmount);
+
+    if (numDefense.eq(0)) {
+      return {
+        captured: true,
+        numSpaceshipsLeft: numAttack.toNumber(),
+      };
+    }
 
     // TODO extract combat rule
     const attackPower = numAttack.mul(planetFrom.stats.attack);
@@ -167,9 +150,7 @@ export class Space {
     if (attackerLoss.eq(numAttack)) {
       return {
         captured: false,
-        numSpaceshipsLeft: planetTo.state.natives
-          ? planetTo.stats.natives
-          : numDefense.sub(defenderLoss).toNumber(),
+        numSpaceshipsLeft: planetTo.state.natives ? planetTo.stats.natives : numDefense.sub(defenderLoss).toNumber(),
       };
     }
     return {
@@ -238,12 +219,7 @@ export class Space {
     delete this.listeners[listenerIndex];
   }
 
-  focus(
-    locationX0: number,
-    locationY0: number,
-    locationX1: number,
-    locationY1: number
-  ): void {
+  focus(locationX0: number, locationY0: number, locationX1: number, locationY1: number): void {
     this._syncSetupRecords(locationX0, locationY0, locationX1, locationY1);
     if (this.focusTimeout) {
       this.timeKeeper.clearTimeout(this.focusTimeout);
@@ -254,12 +230,7 @@ export class Space {
     );
   }
 
-  private async _focus(
-    locationX0: number,
-    locationY0: number,
-    locationX1: number,
-    locationY1: number
-  ): Promise<void> {
+  private async _focus(locationX0: number, locationY0: number, locationX1: number, locationY1: number): Promise<void> {
     this.focusTimeout = undefined;
     // console.log('FOCUS', {locationX0, locationY0, locationX1, locationY1});
     const width = locationX1 - locationX0;
@@ -310,13 +281,7 @@ export class Space {
     });
   }
 
-  private _syncSetupRecords(
-    x0: number,
-    y0: number,
-    x1: number,
-    y1: number,
-    extraLocations: string[] = []
-  ): string[] {
+  private _syncSetupRecords(x0: number, y0: number, x1: number, y1: number, extraLocations: string[] = []): string[] {
     const locations = this.spaceInfo.syncFromRect(x0, y0, x1, y1);
     for (const extraLocation of extraLocations) {
       if (locations.indexOf(extraLocation) === -1) {
@@ -376,12 +341,7 @@ export class Space {
   ): Promise<string[]> {
     // console.log("SETUP RECORDS...", {x0,y0,x1,y1});
     // COMPUTE PLANET INFOS
-    const locations = await this.spaceInfo.asyncPlanetIdsFromRect(
-      x0,
-      y0,
-      x1,
-      y1
-    );
+    const locations = await this.spaceInfo.asyncPlanetIdsFromRect(x0, y0, x1, y1);
     for (const extraLocation of extraLocations) {
       if (locations.indexOf(extraLocation) === -1) {
         locations.push(extraLocation);
@@ -401,13 +361,7 @@ export class Space {
     this.fetchInProgress = true;
     try {
       const extraLocations = Object.keys(this.planetListeners);
-      const locations = this._syncSetupRecords(
-        this.x0,
-        this.y0,
-        this.x1,
-        this.y1,
-        extraLocations
-      ); //await this._setupRecords(this.x0, this.y0, this.x1, this.y1, extraLocations);
+      const locations = this._syncSetupRecords(this.x0, this.y0, this.x1, this.y1, extraLocations); //await this._setupRecords(this.x0, this.y0, this.x1, this.y1, extraLocations);
       // TODO batch grouping :
       // console.log("FETCHING....");
       const result = await this.fetch(locations);
@@ -455,10 +409,7 @@ export class Space {
       delay = 0.01;
     }
     // console.log(`NEW UPDATE in ${delay} s`);
-    this.fetchUpdateTimeout = this.timeKeeper.setTimeout(
-      this._fetchUpdate.bind(this),
-      delay
-    );
+    this.fetchUpdateTimeout = this.timeKeeper.setTimeout(this._fetchUpdate.bind(this), delay);
   }
 
   private _timeBasedUpdate(): void {
@@ -474,8 +425,12 @@ export class Space {
   }
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  protected capturingStatus(planetId: string): TxStatus | null | 'Loading' {
+  protected capturingStatus(planetId: string): (TxStatus & {txHash: string}) | null | 'Loading' {
     return null;
+  }
+
+  getExit(location: string): {txHash: string} | undefined {
+    return undefined;
   }
 
   private _updatePlanetRecord(planetId: string, time: number): void {
@@ -494,18 +449,14 @@ export class Space {
       planetRecord.planet.location.x <= this.discovered.x2 &&
       planetRecord.planet.location.y >= this.discovered.y1 &&
       planetRecord.planet.location.y <= this.discovered.y2;
-    let capturing: TxStatus | null | 'Loading' = null;
+    let capturing: (TxStatus & {txHash: string}) | null | 'Loading' = null;
     let owner = contractState.owner;
     let active = contractState.active;
     let numSpaceships = contractState.numSpaceships;
     let exiting = !!contractState.exitTime;
-    let exitTimeLeft =
-      this.spaceInfo.exitDuration - (time - contractState.exitTime);
+    let exitTimeLeft = this.spaceInfo.exitDuration - (time - contractState.exitTime);
     const natives = contractState.lastUpdated == 0;
-    if (
-      contractState.exitTime > 0 &&
-      time > contractState.exitTime + this.spaceInfo.exitDuration
-    ) {
+    if (contractState.exitTime > 0 && time > contractState.exitTime + this.spaceInfo.exitDuration) {
       // exited
       numSpaceships = 0;
       owner = '0x0000000000000000000000000000000000000000';
@@ -515,11 +466,7 @@ export class Space {
     } else if (contractState.active) {
       numSpaceships =
         contractState.numSpaceships +
-        Math.floor(
-          ((time - contractState.lastUpdated) *
-            planetRecord.planet.stats.production) /
-            (60 * 60)
-        );
+        Math.floor(((time - contractState.lastUpdated) * planetRecord.planet.stats.production) / (60 * 60));
     } else if (natives) {
       numSpaceships = planetRecord.planet.stats.natives; // TODO show num Natives
     }
