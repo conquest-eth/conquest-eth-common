@@ -123,10 +123,29 @@ export class Space {
       };
     }
 
-    // TODO extract combat rule
     const attackPower = numAttack.mul(planetFrom.stats.attack);
     const defensePower = numDefense.mul(planetTo.stats.defense);
 
+    const {attackerLoss, defenderLoss} = this.combat(attackPower, numAttack, defensePower, numDefense);
+
+    if (attackerLoss.eq(numAttack)) {
+      return {
+        captured: false,
+        numSpaceshipsLeft: planetTo.state.natives ? planetTo.stats.natives : numDefense.sub(defenderLoss).toNumber(),
+      };
+    }
+    return {
+      captured: true,
+      numSpaceshipsLeft: numAttack.sub(attackerLoss).toNumber(),
+    };
+  }
+
+  combat(
+    attackPower: BigNumber,
+    numAttack: BigNumber,
+    defensePower: BigNumber,
+    numDefense: BigNumber
+  ): {defenderLoss: BigNumber; attackerLoss: BigNumber} {
     let numAttackRound = numDefense.mul(100000000).div(attackPower);
     if (numAttackRound.mul(attackPower).lt(numDefense.mul(100000000))) {
       numAttackRound = numAttackRound.add(1);
@@ -149,16 +168,33 @@ export class Space {
       defenderLoss = numDefense;
     }
 
-    if (attackerLoss.eq(numAttack)) {
+    return {defenderLoss, attackerLoss};
+  }
+
+  simulateCapture(
+    numSpaceships: number,
+    defense: number
+  ): {
+    success: boolean;
+    numSpaceshipsLeft: number;
+  } {
+    const {attackerLoss, defenderLoss} = this.combat(
+      BigNumber.from(10000),
+      BigNumber.from(100000),
+      BigNumber.from(defense),
+      BigNumber.from(numSpaceships)
+    );
+    if (attackerLoss.lt(100000)) {
       return {
-        captured: false,
-        numSpaceshipsLeft: planetTo.state.natives ? planetTo.stats.natives : numDefense.sub(defenderLoss).toNumber(),
+        success: true,
+        numSpaceshipsLeft: 100000 - attackerLoss.toNumber(),
+      };
+    } else {
+      return {
+        success: false,
+        numSpaceshipsLeft: numSpaceships,
       };
     }
-    return {
-      captured: true,
-      numSpaceshipsLeft: numAttack.sub(attackerLoss).toNumber(),
-    };
   }
 
   planetAt(x: number, y: number): Planet | undefined {
