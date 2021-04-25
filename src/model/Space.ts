@@ -172,8 +172,7 @@ export class Space {
   }
 
   simulateCapture(
-    numSpaceships: number,
-    defense: number
+    planet: Planet & {state: PlanetState}
   ): {
     success: boolean;
     numSpaceshipsLeft: number;
@@ -181,9 +180,19 @@ export class Space {
     const {attackerLoss, defenderLoss} = this.combat(
       BigNumber.from(10000),
       BigNumber.from(100000),
-      BigNumber.from(defense),
-      BigNumber.from(numSpaceships)
+      BigNumber.from(planet.stats.defense),
+      BigNumber.from(planet.state.numSpaceships)
     );
+
+    // Do not allow staking over occupied planets
+    if (!planet.state.natives) {
+      if (planet.state.numSpaceships > 0) {
+        return {
+          success: false,
+          numSpaceshipsLeft: planet.state.numSpaceships,
+        };
+      }
+    }
     if (attackerLoss.lt(100000)) {
       return {
         success: true,
@@ -192,7 +201,7 @@ export class Space {
     } else {
       return {
         success: false,
-        numSpaceshipsLeft: numSpaceships,
+        numSpaceshipsLeft: planet.state.numSpaceships,
       };
     }
   }
