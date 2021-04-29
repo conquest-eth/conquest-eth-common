@@ -435,6 +435,7 @@ export class Space {
           numSpaceships: planetDatum.numSpaceships,
           lastUpdated: planetDatum.lastUpdated,
           active: planetDatum.active,
+          reward: planetDatum.reward,
           // queryTime // TODO ?
         };
         const planetRecord = this.planetRecords[location];
@@ -499,6 +500,7 @@ export class Space {
     let capturing: (TxStatus & {txHash: string}) | null | 'Loading' = null;
     let owner = contractState.owner;
     let active = contractState.active;
+    let reward = contractState.reward;
     let numSpaceships = contractState.numSpaceships;
     let exiting = !!contractState.exitTime;
     let exitTimeLeft = this.spaceInfo.exitDuration - (time - contractState.exitTime);
@@ -510,6 +512,7 @@ export class Space {
       active = false;
       exiting = false;
       exitTimeLeft = 0;
+      reward = BigNumber.from('0');
     } else if (contractState.active) {
       numSpaceships =
         contractState.numSpaceships +
@@ -538,6 +541,7 @@ export class Space {
         natives,
         capturing,
         inReach,
+        reward: reward.toString(),
       };
     } else {
       planetRecord.planet.state.owner = owner;
@@ -548,6 +552,7 @@ export class Space {
       planetRecord.planet.state.natives = natives;
       planetRecord.planet.state.capturing = capturing;
       planetRecord.planet.state.inReach = inReach;
+      planetRecord.planet.state.reward = reward.toString();
     }
 
     this._callListeners(planetId, planetRecord.planet);

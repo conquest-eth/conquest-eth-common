@@ -1,3 +1,5 @@
+import {BigNumber} from '@ethersproject/bignumber';
+
 // object including both planet id and global coordinates
 export type PlanetLocation = {
   id: string;
@@ -37,6 +39,7 @@ export type PlanetContractState = {
   lastUpdated: number;
   active: boolean;
   exitTime: number;
+  reward: BigNumber;
 };
 
 // object representing the state of the planet // change over time and through actions
@@ -49,6 +52,7 @@ export type PlanetState = {
   natives: boolean;
   capturing: (TxStatus & {txHash: string}) | null | 'Loading';
   inReach: boolean;
+  reward: string;
 };
 
 // object representing a Plnet with both its static and dynamic state
