@@ -23,6 +23,8 @@ type PlanetRecord = {
   planet: Planet;
 };
 
+const COMBAT_RULE_SWITCH_TIME = 1620111600; // Tuesday, 4 May 2021 07:00:00 GMT
+
 export class Space {
   private planetRecords: Record<string, PlanetRecord | undefined> = {};
   private planetIdsToUpdate: string[] = [];
@@ -108,10 +110,12 @@ export class Space {
       numSpaceships + Math.floor((duration * planetTo.stats.production * this.spaceInfo.productionSpeedUp) / (60 * 60))
     );
   }
+
   outcome(
     planetFrom: Planet & {state: PlanetState},
     planetTo: Planet & {state: PlanetState},
-    fleetAmount: number
+    fleetAmount: number,
+    time: number
   ): {captured: boolean; numSpaceshipsLeft: number} {
     const numDefense = BigNumber.from(this.numSpaceshipsAtArrival(planetFrom, planetTo));
     const numAttack = BigNumber.from(fleetAmount);
@@ -123,10 +127,14 @@ export class Space {
       };
     }
 
-    const attackPower = numAttack.mul(planetFrom.stats.attack);
-    const defensePower = numDefense.mul(planetTo.stats.defense);
+    let result: {attackerLoss: BigNumber; defenderLoss: BigNumber};
+    if (time > COMBAT_RULE_SWITCH_TIME - 30) {
+      result = this.combat(planetFrom.stats.attack, numAttack, planetTo.stats.defense, numDefense);
+    } else {
+      result = this.old_combat(planetFrom.stats.attack, numAttack, planetTo.stats.defense, numDefense);
+    }
 
-    const {attackerLoss, defenderLoss} = this.combat(attackPower, numAttack, defensePower, numDefense);
+    const {attackerLoss, defenderLoss} = result;
 
     if (attackerLoss.eq(numAttack)) {
       return {
@@ -141,11 +149,41 @@ export class Space {
   }
 
   combat(
-    attackPower: BigNumber,
+    attack: number,
     numAttack: BigNumber,
-    defensePower: BigNumber,
+    defense: number,
     numDefense: BigNumber
   ): {defenderLoss: BigNumber; attackerLoss: BigNumber} {
+    const attackDamage = numAttack.mul(attack).div(defense);
+
+    if (numDefense.gt(attackDamage)) {
+      // attack fails
+      return {
+        attackerLoss: numAttack, // all attack destroyed
+        defenderLoss: attackDamage, // 1 spaceship will be left at least as defenderLoss < numDefense
+      };
+    } else {
+      // attack succeed
+      let defenseDamage = numDefense.mul(defense).div(attack);
+      if (defenseDamage.gte(numAttack)) {
+        defenseDamage = numAttack.sub(1);
+      }
+      return {
+        attackerLoss: defenseDamage,
+        defenderLoss: numDefense, // all defense destroyed
+      };
+    }
+  }
+
+  old_combat(
+    attack: number,
+    numAttack: BigNumber,
+    defense: number,
+    numDefense: BigNumber
+  ): {defenderLoss: BigNumber; attackerLoss: BigNumber} {
+    const attackPower = numAttack.mul(attack);
+    const defensePower = numDefense.mul(defense);
+
     let numAttackRound = numDefense.mul(100000000).div(attackPower);
     if (numAttackRound.mul(attackPower).lt(numDefense.mul(100000000))) {
       numAttackRound = numAttackRound.add(1);
@@ -172,17 +210,29 @@ export class Space {
   }
 
   simulateCapture(
-    planet: Planet & {state: PlanetState}
+    planet: Planet & {state: PlanetState},
+    time: number
   ): {
     success: boolean;
     numSpaceshipsLeft: number;
   } {
-    const {attackerLoss, defenderLoss} = this.combat(
-      BigNumber.from(10000),
-      BigNumber.from(100000),
-      BigNumber.from(planet.stats.defense),
-      BigNumber.from(planet.state.numSpaceships)
-    );
+    let result: {attackerLoss: BigNumber; defenderLoss: BigNumber};
+    if (time > COMBAT_RULE_SWITCH_TIME - 30) {
+      result = this.combat(
+        10000,
+        BigNumber.from(100000), // TODO use contract _acquireNumSpaceships
+        planet.stats.defense,
+        BigNumber.from(planet.state.numSpaceships)
+      );
+    } else {
+      result = this.old_combat(
+        10000,
+        BigNumber.from(100000), // TODO use contract _acquireNumSpaceships
+        planet.stats.defense,
+        BigNumber.from(planet.state.numSpaceships)
+      );
+    }
+    const {attackerLoss, defenderLoss} = result;
 
     // Do not allow staking over occupied planets
     if (!planet.state.natives) {
@@ -218,7 +268,8 @@ export class Space {
   prediction(
     planetFrom: Planet & {state: PlanetState},
     planetTo: Planet & {state: PlanetState},
-    fleetAmount: number
+    fleetAmount: number,
+    time: number
   ): {
     arrivalTime: number;
     numSpaceshipsAtArrival: number;
@@ -227,7 +278,7 @@ export class Space {
     return {
       arrivalTime: this.timeToArrive(planetFrom, planetTo),
       numSpaceshipsAtArrival: this.numSpaceshipsAtArrival(planetFrom, planetTo),
-      outcome: this.outcome(planetFrom, planetTo, fleetAmount),
+      outcome: this.outcome(planetFrom, planetTo, fleetAmount, time),
     };
   }
 
