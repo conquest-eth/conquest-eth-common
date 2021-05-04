@@ -121,6 +121,13 @@ export class Space {
     const numDefense = BigNumber.from(this.numSpaceshipsAtArrival(planetFrom, planetTo));
     const numAttack = BigNumber.from(fleetAmount);
 
+    if (numAttack.eq(0)) {
+      return {
+        captured: false,
+        numSpaceshipsLeft: numDefense.toNumber(),
+      };
+    }
+
     if (numDefense.eq(0)) {
       return {
         captured: true,
@@ -155,6 +162,10 @@ export class Space {
     defense: number,
     numDefense: BigNumber
   ): {defenderLoss: BigNumber; attackerLoss: BigNumber} {
+    if (numAttack.eq(0) || numDefense.eq(0)) {
+      return {defenderLoss: BigNumber.from(0), attackerLoss: BigNumber.from(0)};
+    }
+
     const attackDamage = numAttack.mul(attack).div(defense);
 
     if (numDefense.gt(attackDamage)) {
@@ -182,6 +193,10 @@ export class Space {
     defense: number,
     numDefense: BigNumber
   ): {defenderLoss: BigNumber; attackerLoss: BigNumber} {
+    if (numAttack.eq(0) || numDefense.eq(0)) {
+      return {defenderLoss: BigNumber.from(0), attackerLoss: BigNumber.from(0)};
+    }
+
     const attackPower = numAttack.mul(attack);
     const defensePower = numDefense.mul(defense);
 
