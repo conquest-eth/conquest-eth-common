@@ -232,6 +232,7 @@ export class Space {
     success: boolean;
     numSpaceshipsLeft: number;
   } {
+    if (planet.state.owner.toLowerCase() === this.)
     let result: {attackerLoss: BigNumber; defenderLoss: BigNumber};
     if (time > COMBAT_RULE_SWITCH_TIME - 30) {
       result = this.combat(
