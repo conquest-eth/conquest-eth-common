@@ -98,18 +98,26 @@ export class Space {
   timeToArrive(planetFrom: {location: Position}, planetTo: {location: Position}): number {
     return this.timeLeft(0, planetFrom.location, planetTo.location, 0).timeLeft;
   }
-  numSpaceshipsAtArrival(planetFrom: Planet, planetTo: Planet & {state: PlanetState}): number {
+  numSpaceshipsAtArrival(planetFrom: Planet, planetTo: Planet & {state: PlanetState}): {min: number; max: number} {
     const duration = this.timeToArrive(planetFrom, planetTo);
     // TODO extract
     const numSpaceships = planetTo.state.numSpaceships;
 
     if (!planetTo.state.active) {
-      return numSpaceships;
+      return {min: numSpaceships, max: numSpaceships};
     }
 
-    return (
-      numSpaceships + Math.floor((duration * planetTo.stats.production * this.spaceInfo.productionSpeedUp) / (60 * 60))
-    );
+    return {
+      min:
+        numSpaceships +
+        Math.floor((duration * planetTo.stats.production * this.spaceInfo.productionSpeedUp) / (60 * 60)),
+      max:
+        numSpaceships +
+        Math.floor(
+          ((duration + this.spaceInfo.resolveWindow) * planetTo.stats.production * this.spaceInfo.productionSpeedUp) /
+            (60 * 60)
+        ),
+    };
   }
 
   outcome(
@@ -117,43 +125,88 @@ export class Space {
     planetTo: Planet & {state: PlanetState},
     fleetAmount: number,
     time: number
-  ): {captured: boolean; numSpaceshipsLeft: number} {
-    const numDefense = BigNumber.from(this.numSpaceshipsAtArrival(planetFrom, planetTo));
+  ): {
+    min: {captured: boolean; numSpaceshipsLeft: number};
+    max: {captured: boolean; numSpaceshipsLeft: number};
+    timeUntilFails: number;
+  } {
+    const {min, max} = this.numSpaceshipsAtArrival(planetFrom, planetTo);
+    const numDefenseMin = BigNumber.from(min);
+    const numDefenseMax = BigNumber.from(max);
     const numAttack = BigNumber.from(fleetAmount);
 
     if (numAttack.eq(0)) {
       return {
-        captured: false,
-        numSpaceshipsLeft: numDefense.toNumber(),
+        min: {
+          captured: false,
+          numSpaceshipsLeft: numDefenseMin.toNumber(),
+        },
+        max: {
+          captured: false,
+          numSpaceshipsLeft: numDefenseMax.toNumber(),
+        },
+        timeUntilFails: 0,
       };
     }
 
-    if (numDefense.eq(0)) {
+    // TODO if only: numDefenseMin.eq(0)
+    if (numDefenseMax.eq(0)) {
       return {
-        captured: true,
-        numSpaceshipsLeft: numAttack.toNumber(),
+        min: {
+          captured: true,
+          numSpaceshipsLeft: numAttack.toNumber(),
+        },
+        max: {
+          captured: true,
+          numSpaceshipsLeft: numAttack.toNumber(),
+        },
+        timeUntilFails: 0,
       };
     }
 
-    let result: {attackerLoss: BigNumber; defenderLoss: BigNumber};
-    if (time > COMBAT_RULE_SWITCH_TIME - 30) {
-      result = this.combat(planetFrom.stats.attack, numAttack, planetTo.stats.defense, numDefense);
-    } else {
-      result = this.old_combat(planetFrom.stats.attack, numAttack, planetTo.stats.defense, numDefense);
-    }
-
-    const {attackerLoss, defenderLoss} = result;
-
-    if (attackerLoss.eq(numAttack)) {
-      return {
-        captured: false,
-        numSpaceshipsLeft: planetTo.state.natives ? planetTo.stats.natives : numDefense.sub(defenderLoss).toNumber(),
-      };
-    }
-    return {
-      captured: true,
-      numSpaceshipsLeft: numAttack.sub(attackerLoss).toNumber(),
+    const minOutcome = {
+      captured: false,
+      numSpaceshipsLeft: 0,
     };
+    const maxOutcome = {
+      captured: false,
+      numSpaceshipsLeft: 0,
+    };
+
+    const resultMin = this.combat(planetFrom.stats.attack, numAttack, planetTo.stats.defense, numDefenseMin);
+    if (resultMin.attackerLoss.eq(numAttack)) {
+      minOutcome.captured = false;
+      minOutcome.numSpaceshipsLeft = planetTo.state.natives
+        ? planetTo.stats.natives
+        : numDefenseMin.sub(resultMin.defenderLoss).toNumber();
+    } else {
+      minOutcome.captured = true;
+      minOutcome.numSpaceshipsLeft = numAttack.sub(resultMin.attackerLoss).toNumber();
+    }
+
+    const resultMax = this.combat(planetFrom.stats.attack, numAttack, planetTo.stats.defense, numDefenseMax);
+    if (resultMax.attackerLoss.eq(numAttack)) {
+      maxOutcome.captured = false;
+      maxOutcome.numSpaceshipsLeft = planetTo.state.natives
+        ? planetTo.stats.natives
+        : numDefenseMax.sub(resultMax.defenderLoss).toNumber();
+    } else {
+      maxOutcome.captured = true;
+      maxOutcome.numSpaceshipsLeft = numAttack.sub(resultMax.attackerLoss).toNumber();
+    }
+
+    let timeUntilFails = 0;
+    if (minOutcome.captured) {
+      const production = numDefenseMax.sub(numDefenseMin).mul(1000000).div(this.spaceInfo.resolveWindow);
+      if (production.gt(0)) {
+        timeUntilFails = resultMin.attackDamage.sub(numDefenseMin).mul(1000000).div(production).toNumber();
+        if (timeUntilFails > this.spaceInfo.resolveWindow) {
+          timeUntilFails = 0;
+        }
+      }
+    }
+
+    return {min: minOutcome, max: maxOutcome, timeUntilFails};
   }
 
   combat(
@@ -161,18 +214,19 @@ export class Space {
     numAttack: BigNumber,
     defense: number,
     numDefense: BigNumber
-  ): {defenderLoss: BigNumber; attackerLoss: BigNumber} {
-    if (numAttack.eq(0) || numDefense.eq(0)) {
-      return {defenderLoss: BigNumber.from(0), attackerLoss: BigNumber.from(0)};
-    }
-
+  ): {defenderLoss: BigNumber; attackerLoss: BigNumber; attackDamage: BigNumber} {
     const attackDamage = numAttack.mul(attack).div(defense);
+
+    if (numAttack.eq(0) || numDefense.eq(0)) {
+      return {defenderLoss: BigNumber.from(0), attackerLoss: BigNumber.from(0), attackDamage};
+    }
 
     if (numDefense.gt(attackDamage)) {
       // attack fails
       return {
         attackerLoss: numAttack, // all attack destroyed
         defenderLoss: attackDamage, // 1 spaceship will be left at least as defenderLoss < numDefense
+        attackDamage,
       };
     } else {
       // attack succeed
@@ -182,47 +236,10 @@ export class Space {
       }
       return {
         attackerLoss: defenseDamage,
-        defenderLoss: numDefense, // all defense destroyed
+        defenderLoss: numDefense, // all defense destroyeda
+        attackDamage,
       };
     }
-  }
-
-  old_combat(
-    attack: number,
-    numAttack: BigNumber,
-    defense: number,
-    numDefense: BigNumber
-  ): {defenderLoss: BigNumber; attackerLoss: BigNumber} {
-    if (numAttack.eq(0) || numDefense.eq(0)) {
-      return {defenderLoss: BigNumber.from(0), attackerLoss: BigNumber.from(0)};
-    }
-
-    const attackPower = numAttack.mul(attack);
-    const defensePower = numDefense.mul(defense);
-
-    let numAttackRound = numDefense.mul(100000000).div(attackPower);
-    if (numAttackRound.mul(attackPower).lt(numDefense.mul(100000000))) {
-      numAttackRound = numAttackRound.add(1);
-    }
-    let numDefenseRound = numAttack.mul(100000000).div(defensePower);
-    if (numDefenseRound.mul(defensePower).lt(numAttack.mul(100000000))) {
-      numDefenseRound = numDefenseRound.add(1);
-    }
-
-    let numRound = numAttackRound;
-    if (numDefenseRound.lt(numRound)) {
-      numRound = numDefenseRound;
-    }
-    let attackerLoss = numRound.mul(defensePower).div(100000000);
-    if (numAttack.lt(attackerLoss)) {
-      attackerLoss = numAttack;
-    }
-    let defenderLoss = numRound.mul(attackPower).div(100000000);
-    if (numDefense.lt(defenderLoss)) {
-      defenderLoss = numDefense;
-    }
-
-    return {defenderLoss, attackerLoss};
   }
 
   simulateCapture(
@@ -236,26 +253,15 @@ export class Space {
     if (planet.state.owner.toLowerCase() === from.toLowerCase()) {
       return {
         success: true,
-        numSpaceshipsLeft: planet.state.numSpaceships + 100000 // TODO use contract _acquireNumSpaceships
+        numSpaceshipsLeft: planet.state.numSpaceships + 100000, // TODO use contract _acquireNumSpaceships
       };
     }
-    let result: {attackerLoss: BigNumber; defenderLoss: BigNumber};
-    if (time > COMBAT_RULE_SWITCH_TIME - 30) {
-      result = this.combat(
-        10000,
-        BigNumber.from(100000), // TODO use contract _acquireNumSpaceships
-        planet.stats.defense,
-        BigNumber.from(planet.state.numSpaceships)
-      );
-    } else {
-      result = this.old_combat(
-        10000,
-        BigNumber.from(100000), // TODO use contract _acquireNumSpaceships
-        planet.stats.defense,
-        BigNumber.from(planet.state.numSpaceships)
-      );
-    }
-    const {attackerLoss, defenderLoss} = result;
+    const {attackerLoss, defenderLoss} = this.combat(
+      10000,
+      BigNumber.from(100000), // TODO use contract _acquireNumSpaceships
+      planet.stats.defense,
+      BigNumber.from(planet.state.numSpaceships)
+    );
 
     // Do not allow staking over occupied planets
     if (!planet.state.natives) {
@@ -295,8 +301,8 @@ export class Space {
     time: number
   ): {
     arrivalTime: number;
-    numSpaceshipsAtArrival: number;
-    outcome: {captured: boolean; numSpaceshipsLeft: number};
+    numSpaceshipsAtArrival: {min: number; max: number};
+    outcome: {min: {captured: boolean; numSpaceshipsLeft: number}; max: {captured: boolean; numSpaceshipsLeft: number}};
   } {
     return {
       arrivalTime: this.timeToArrive(planetFrom, planetTo),
