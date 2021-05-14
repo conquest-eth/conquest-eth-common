@@ -226,12 +226,19 @@ export class Space {
   }
 
   simulateCapture(
+    from: string,
     planet: Planet & {state: PlanetState},
     time: number
   ): {
     success: boolean;
     numSpaceshipsLeft: number;
   } {
+    if (planet.state.owner.toLowerCase() === from.toLowerCase()) {
+      return {
+        success: true,
+        numSpaceshipsLeft: planet.state.numSpaceships + 100000 // TODO use contract _acquireNumSpaceships
+      };
+    }
     let result: {attackerLoss: BigNumber; defenderLoss: BigNumber};
     if (time > COMBAT_RULE_SWITCH_TIME - 30) {
       result = this.combat(
