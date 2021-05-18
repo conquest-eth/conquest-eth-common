@@ -77,7 +77,7 @@ export type Fleet = {
 // object representing a fleet with private info to resolve its attack/sending
 export type OwnFleet = Fleet & {
   to: Position;
-  resolveTx?: {hash: string; nonce: number}; // TODO time ?
+  resolveTx?: {hash: string; nonce: number; submissionTime: number}; // TODO time ?
   toDelete?: boolean;
   sendTx: {hash: string; nonce: number; blockNumber?: number}; // TODO time ?
   updatedAt: number;
