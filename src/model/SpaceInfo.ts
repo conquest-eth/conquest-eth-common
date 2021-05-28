@@ -125,18 +125,18 @@ export class SpaceInfo {
   //   return this.planetIdsInArea[area];
   // }
 
-  // syncFromRect(x0: number, y0: number, x1: number, y1: number): string[] {
-  //   const ids = [];
-  //   for (let x = x0; x <= x1; x++) {
-  //     for (let y = y0; y <= y1; y++) {
-  //       const planet = this.getPlanetInfo(x, y);
-  //       if (planet) {
-  //         ids.push(xyToLocation(x, y));
-  //       }
-  //     }
-  //   }
-  //   return ids;
-  // }
+  syncFromRect(x0: number, y0: number, x1: number, y1: number): string[] {
+    const ids = [];
+    for (let x = x0; x <= x1; x++) {
+      for (let y = y0; y <= y1; y++) {
+        const planet = this.getPlanetInfo(x, y);
+        if (planet) {
+          ids.push(xyToLocation(x, y));
+        }
+      }
+    }
+    return ids;
+  }
 
   // *yieldPlanetIdsFromRect(x0: number, y0: number, x1: number, y1: number): Generator<string, void> {
   //   for (let x = x0; x <= x1; x++) {
@@ -161,6 +161,34 @@ export class SpaceInfo {
   //   }
   //   return idList;
   // }
+
+  *yieldPlanetsFromRect(x0: number, y0: number, x1: number, y1: number): Generator<PlanetInfo, void> {
+    for (let x = x0; x <= x1; x++) {
+      for (let y = y0; y <= y1; y++) {
+        const id = '' + x + ',' + y; // TODO optimize ?
+        const inCache = this.cache[id];
+        const planet = this.getPlanetInfo(x, y);
+        if (planet) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          (planet as any).inCache = inCache;
+          yield planet;
+        }
+      }
+    }
+  }
+
+  async asyncPlanetsFromRect(x0: number, y0: number, x1: number, y1: number): Promise<PlanetInfo[]> {
+    const planets = [];
+    let i = 0;
+    for (const planet of this.yieldPlanetsFromRect(x0, y0, x1, y1)) {
+      planets.push(planet);
+      i++;
+      if (i % 6 == 0) {
+        await skip(); // TODO use worker instead
+      }
+    }
+    return planets;
+  }
 
   getPlanetInfo(x: number, y: number): PlanetInfo | undefined {
     const id = '' + x + ',' + y; // TODO optimize ?

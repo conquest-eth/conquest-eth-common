@@ -11,9 +11,7 @@ export type TimeKeeper = {
   getTime: () => number;
 };
 
-export type PlanetFetch = (
-  ids: string[]
-) => Promise<{
+export type PlanetFetch = (ids: string[]) => Promise<{
   discovered: {minX: number; minY: number; maxX: number; maxY: number};
   planetStates: PlanetData[];
 }>;
@@ -459,29 +457,29 @@ export class Space {
   //   return locations;
   // }
 
-  private async _setupRecords(
-    x0: number,
-    y0: number,
-    x1: number,
-    y1: number,
-    extraLocations: string[] = []
-  ): Promise<string[]> {
-    // console.log("SETUP RECORDS...", {x0,y0,x1,y1});
-    // COMPUTE PLANET INFOS
-    const locations = await this.spaceInfo.asyncPlanetIdsFromRect(x0, y0, x1, y1);
-    for (const extraLocation of extraLocations) {
-      if (locations.indexOf(extraLocation) === -1) {
-        locations.push(extraLocation);
-      }
-    }
+  // private async _setupRecords(
+  //   x0: number,
+  //   y0: number,
+  //   x1: number,
+  //   y1: number,
+  //   extraLocations: string[] = []
+  // ): Promise<string[]> {
+  //   // console.log("SETUP RECORDS...", {x0,y0,x1,y1});
+  //   // COMPUTE PLANET INFOS
+  //   const locations = await this.spaceInfo.asyncPlanetIdsFromRect(x0, y0, x1, y1);
+  //   for (const extraLocation of extraLocations) {
+  //     if (locations.indexOf(extraLocation) === -1) {
+  //       locations.push(extraLocation);
+  //     }
+  //   }
 
-    // SETUP PLANET RECORD WITH EMPTY CONTRACT STATE
-    for (const location of locations) {
-      this._setupRecord(location);
-    }
-    // console.log("..DONE RECORDS", {x0,y0,x1,y1});
-    return locations;
-  }
+  //   // SETUP PLANET RECORD WITH EMPTY CONTRACT STATE
+  //   for (const location of locations) {
+  //     this._setupRecord(location);
+  //   }
+  //   // console.log("..DONE RECORDS", {x0,y0,x1,y1});
+  //   return locations;
+  // }
 
   private async _fetchUpdate(): Promise<void> {
     this.fetchUpdateTimeout = undefined;
