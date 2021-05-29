@@ -191,6 +191,30 @@ export class SpaceInfo {
   }
 
   getPlanetInfo(x: number, y: number): PlanetInfo | undefined {
+    // if (x === 0 && y === 0) {
+    //   return {
+    //     location: {
+    //       id: xyToLocation(x, y),
+    //       x,
+    //       y,
+    //       globalX: x * 4 + 1,
+    //       globalY: y * 4 + 0,
+    //     },
+    //     type: 1,
+    //     stats: {
+    //       name: 'zero',
+    //       stake: 1,
+    //       production: 1,
+    //       attack: 1,
+    //       defense: 1,
+    //       speed: 1,
+    //       natives: 1,
+    //       // subX: 0,
+    //       // subY: 0,
+    //     },
+    //   };
+    // }
+
     const id = '' + x + ',' + y; // TODO optimize ?
     const inCache = this.cache[id];
     if (typeof inCache !== 'undefined') {
@@ -265,6 +289,7 @@ export class SpaceInfo {
         subY,
       },
     };
+    // console.log(JSON.stringify(planetObj);
     this.cache[id] = planetObj;
     return planetObj;
   }
