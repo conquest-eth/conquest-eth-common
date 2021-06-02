@@ -23,6 +23,8 @@ export type Statistics = {
   defense: number;
   speed: number;
   natives: number;
+  subX: number;
+  subY: number;
 };
 
 // object representing a planet with only static attributes // do not change
