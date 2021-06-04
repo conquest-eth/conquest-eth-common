@@ -8,6 +8,7 @@ import {
   StrictLocationPointer,
   xyToLocation,
   topleftLocationFromArea,
+  locationToXY,
 } from '../util/location';
 import {normal16, normal8, value8Mod} from '../util/extraction';
 import {uniqueName} from '../random/uniqueName'; // TODO in common
@@ -25,6 +26,7 @@ function skip(): Promise<void> {
 export class SpaceInfo {
   private readonly genesis: string;
   private readonly cache: {[id: string]: PlanetInfo | null} = {};
+  private readonly locationCache: {[id: string]: PlanetInfo | null} = {};
   // private readonly planetIdsInArea: {[zoneId: string]: string[]} = {};
 
   public readonly resolveWindow: number;
@@ -190,6 +192,18 @@ export class SpaceInfo {
     return planets;
   }
 
+  getPlanetInfoViaId(id: string): PlanetInfo | undefined {
+    const inCache = this.locationCache[id];
+    if (typeof inCache !== 'undefined') {
+      if (inCache === null) {
+        return undefined;
+      }
+      return inCache;
+    }
+    const {x, y} = locationToXY(id);
+    return this.getPlanetInfo(x, y);
+  }
+
   getPlanetInfo(x: number, y: number): PlanetInfo | undefined {
     // if (x === 0 && y === 0) {
     //   return {
@@ -291,6 +305,7 @@ export class SpaceInfo {
     };
     // console.log(JSON.stringify(planetObj);
     this.cache[id] = planetObj;
+    this.locationCache[planetObj.location.id] = planetObj;
     return planetObj;
   }
 
