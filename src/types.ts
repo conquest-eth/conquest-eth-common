@@ -46,7 +46,7 @@ export type PlanetContractState = {
 
 // object representing the state of the planet // change over time and through actions
 export type PlanetState = {
-  owner: string;
+  owner?: string;
   numSpaceships: number;
   active: boolean;
   exiting: boolean;
