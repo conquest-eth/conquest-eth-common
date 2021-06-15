@@ -52,7 +52,7 @@ export type PlanetState = {
   exiting: boolean;
   exitTimeLeft: number;
   natives: boolean;
-  capturing: (TxStatus & {txHash: string}) | null | 'Loading';
+  capturing: boolean; // TODO add error state
   inReach: boolean;
   reward: string;
 };

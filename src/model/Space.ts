@@ -248,7 +248,7 @@ export class Space {
     success: boolean;
     numSpaceshipsLeft: number;
   } {
-    if (planet.state.owner.toLowerCase() === from.toLowerCase()) {
+    if (planet.state.owner?.toLowerCase() === from.toLowerCase()) {
       return {
         success: true,
         numSpaceshipsLeft: planet.state.numSpaceships + 100000, // TODO use contract _acquireNumSpaceships
@@ -575,7 +575,7 @@ export class Space {
       planetRecord.planet.location.x <= this.discovered.x2 &&
       planetRecord.planet.location.y >= this.discovered.y1 &&
       planetRecord.planet.location.y <= this.discovered.y2;
-    let capturing: (TxStatus & {txHash: string}) | null | 'Loading' = null;
+    const capturing = false; // TODO (TxStatus & {txHash: string}) | null | 'Loading' = null;
     let owner = contractState.owner;
     let active = contractState.active;
     let reward = contractState.reward;
@@ -604,9 +604,9 @@ export class Space {
       numSpaceships = planetRecord.planet.stats.natives; // TODO show num Natives
     }
 
-    if (!active) {
-      capturing = this.capturingStatus(planetId);
-    }
+    // if (!active) {
+    //   capturing = this.capturingStatus(planetId);
+    // }
 
     if (!planetRecord.planet.state) {
       planetRecord.planet.loaded = true;
