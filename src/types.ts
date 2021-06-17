@@ -55,6 +55,7 @@ export type PlanetState = {
   capturing: boolean; // TODO add error state
   inReach: boolean;
   reward: string;
+  requireClaimAcknowledgement?: string;
 };
 
 // object representing a Plnet with both its static and dynamic state
