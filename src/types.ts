@@ -69,19 +69,15 @@ export type Position = {x: number; y: number};
 
 // object representing a fleet (publicly)
 export type Fleet = {
-  from: Position;
-  fleetAmount: number; // not needed to store, except to not require contract fetch
-  launchTime: number; // a bit needed until fleet is fetchable from contract
-  actualLaunchTime?: number;
-  duration: number; // not needed to store, except to not require computing stats from from planet
-  owner: string; // not needed at all to store : TODO remove ?
-};
-
-// object representing a fleet with private info to resolve its attack/sending
-export type OwnFleet = Fleet & {
-  to: Position;
-  resolveTx?: {hash: string; nonce: number; submissionTime: number}; // TODO time ?
-  toDelete?: boolean;
-  sendTx: {hash: string; nonce: number; blockNumber?: number}; // TODO time ?
-  updatedAt: number;
+  txHash: string; // TODO better id
+  from: PlanetInfo;
+  to: PlanetInfo;
+  quantity: number; // not needed to store, except to not require contract fetch
+  duration: number;
+  launchTime: number;
+  amountDestroyed: number;
+  timeLeft: number; // not needed to store, except to not require computing stats from from planet
+  timeToResolve: number;
+  sending: {id: string; status: 'SUCCESS' | 'FAILURE' | 'LOADING' | 'PENDING' | 'CANCELED' | 'TIMEOUT';}; // TODO use pendingaction type
+  resolution?: {id: string; status: 'SUCCESS' | 'FAILURE' | 'LOADING' | 'PENDING' | 'CANCELED' | 'TIMEOUT';}; // TODO use pendingaction type
 };

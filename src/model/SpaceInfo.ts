@@ -1,5 +1,5 @@
 // import {Writable, writable} from 'svelte/store';
-import type {PlanetInfo} from '../types';
+import type {PlanetInfo, PlanetState} from '../types';
 import {keccak256} from '@ethersproject/solidity';
 import {
   LocationPointer,
@@ -12,6 +12,7 @@ import {
 } from '../util/location';
 import {normal16, normal8, value8Mod} from '../util/extraction';
 import {uniqueName} from '../random/uniqueName'; // TODO in common
+import { BigNumber } from '@ethersproject/bignumber';
 
 function skip(): Promise<void> {
   return new Promise<void>((resolve) => {
@@ -318,4 +319,224 @@ export class SpaceInfo {
     } while (!pointer.data);
     return pointer as StrictLocationPointer<PlanetInfo>;
   }
+
+
+  timeLeft(
+    time: number,
+    fromPlanet: PlanetInfo,
+    toPlanet: PlanetInfo,
+    startTime: number
+  ): {timeLeft: number; timePassed: number; fullTime: number} {
+    const gFromX = fromPlanet.location.globalX;
+    const gFromY = fromPlanet.location.globalY;
+    const gToX = toPlanet.location.globalX;
+    const gToY = toPlanet.location.globalY;
+    const speed = fromPlanet.stats.speed;
+    const fullDistance = Math.floor(Math.sqrt(Math.pow(gToX - gFromX, 2) + Math.pow(gToY - gFromY, 2)));
+    const fullTime = fullDistance * ((this.timePerDistance * 10000) / speed);
+    const timePassed = time - startTime;
+    const timeLeft = fullTime - timePassed;
+    return {timeLeft, timePassed, fullTime};
+  }
+
+  timeToArrive(fromPlanet: PlanetInfo,
+    toPlanet: PlanetInfo): number {
+    return this.timeLeft(0, fromPlanet, toPlanet, 0).timeLeft;
+  }
+
+
+  numSpaceshipsAtArrival(fromPlanet: PlanetInfo, toPlanet: PlanetInfo, toPlanetState: PlanetState): {min: number; max: number} {
+    const duration = this.timeToArrive(fromPlanet, toPlanet);
+    // TODO extract
+    const numSpaceships = toPlanetState.numSpaceships;
+
+    if (!toPlanetState.active) {
+      return {min: numSpaceships, max: numSpaceships};
+    }
+
+    return {
+      min:
+        numSpaceships +
+        Math.floor((duration * toPlanet.stats.production * this.productionSpeedUp) / (60 * 60)),
+      max:
+        numSpaceships +
+        Math.floor(
+          ((duration + this.resolveWindow) * toPlanet.stats.production * this.productionSpeedUp) /
+            (60 * 60)
+        ),
+    };
+  }
+
+  outcome(
+    fromPlanet: PlanetInfo, fromPlanetState: PlanetState,
+    toPlanet: PlanetInfo, toPlanetState: PlanetState,
+    fleetAmount: number,
+    time: number
+  ): {
+    min: {captured: boolean; numSpaceshipsLeft: number};
+    max: {captured: boolean; numSpaceshipsLeft: number};
+    timeUntilFails: number;
+  } {
+    const {min, max} = this.numSpaceshipsAtArrival(fromPlanet, toPlanet, toPlanetState);
+    const numDefenseMin = BigNumber.from(min);
+    const numDefenseMax = BigNumber.from(max);
+    const numAttack = BigNumber.from(fleetAmount);
+
+    if (numAttack.eq(0)) {
+      return {
+        min: {
+          captured: false,
+          numSpaceshipsLeft: numDefenseMin.toNumber(),
+        },
+        max: {
+          captured: false,
+          numSpaceshipsLeft: numDefenseMax.toNumber(),
+        },
+        timeUntilFails: 0,
+      };
+    }
+
+    // TODO if only: numDefenseMin.eq(0)
+    if (numDefenseMax.eq(0)) {
+      return {
+        min: {
+          captured: true,
+          numSpaceshipsLeft: numAttack.toNumber(),
+        },
+        max: {
+          captured: true,
+          numSpaceshipsLeft: numAttack.toNumber(),
+        },
+        timeUntilFails: 0,
+      };
+    }
+
+    const minOutcome = {
+      captured: false,
+      numSpaceshipsLeft: 0,
+    };
+    const maxOutcome = {
+      captured: false,
+      numSpaceshipsLeft: 0,
+    };
+
+    const resultMin = this.combat(fromPlanet.stats.attack, numAttack, toPlanet.stats.defense, numDefenseMin);
+    if (resultMin.attackerLoss.eq(numAttack)) {
+      minOutcome.captured = false;
+      minOutcome.numSpaceshipsLeft = toPlanetState.natives
+        ? toPlanet.stats.natives
+        : numDefenseMin.sub(resultMin.defenderLoss).toNumber();
+    } else {
+      minOutcome.captured = true;
+      minOutcome.numSpaceshipsLeft = numAttack.sub(resultMin.attackerLoss).toNumber();
+    }
+
+    const resultMax = this.combat(fromPlanet.stats.attack, numAttack, toPlanet.stats.defense, numDefenseMax);
+    if (resultMax.attackerLoss.eq(numAttack)) {
+      maxOutcome.captured = false;
+      maxOutcome.numSpaceshipsLeft = toPlanetState.natives
+        ? toPlanet.stats.natives
+        : numDefenseMax.sub(resultMax.defenderLoss).toNumber();
+    } else {
+      maxOutcome.captured = true;
+      maxOutcome.numSpaceshipsLeft = numAttack.sub(resultMax.attackerLoss).toNumber();
+    }
+
+    let timeUntilFails = 0;
+    if (minOutcome.captured) {
+      const production = numDefenseMax.sub(numDefenseMin).mul(1000000).div(this.resolveWindow);
+      if (production.gt(0)) {
+        timeUntilFails = resultMin.attackDamage.sub(numDefenseMin).mul(1000000).div(production).toNumber();
+        if (timeUntilFails > this.resolveWindow) {
+          timeUntilFails = 0;
+        }
+      }
+    }
+
+    return {min: minOutcome, max: maxOutcome, timeUntilFails};
+  }
+
+  combat(
+    attack: number,
+    numAttack: BigNumber,
+    defense: number,
+    numDefense: BigNumber
+  ): {defenderLoss: BigNumber; attackerLoss: BigNumber; attackDamage: BigNumber} {
+    const attackDamage = numAttack.mul(attack).div(defense);
+
+    if (numAttack.eq(0) || numDefense.eq(0)) {
+      return {defenderLoss: BigNumber.from(0), attackerLoss: BigNumber.from(0), attackDamage};
+    }
+
+    if (numDefense.gt(attackDamage)) {
+      // attack fails
+      return {
+        attackerLoss: numAttack, // all attack destroyed
+        defenderLoss: attackDamage, // 1 spaceship will be left at least as defenderLoss < numDefense
+        attackDamage,
+      };
+    } else {
+      // attack succeed
+      let defenseDamage = numDefense.mul(defense).div(attack);
+      if (defenseDamage.gte(numAttack)) {
+        defenseDamage = numAttack.sub(1);
+      }
+      return {
+        attackerLoss: defenseDamage,
+        defenderLoss: numDefense, // all defense destroyeda
+        attackDamage,
+      };
+    }
+  }
+
+  simulateCapture(
+    from: string,
+    planetInfo: PlanetInfo,
+    planetState: PlanetState
+  ): {
+    success: boolean;
+    numSpaceshipsLeft: number;
+  } {
+    console.log(planetState.owner, from);
+    if (planetState.owner && planetState.owner.toLowerCase() === from.toLowerCase()) {
+      return {
+        success: true,
+        numSpaceshipsLeft: planetState.numSpaceships + 100000, // TODO use contract _acquireNumSpaceships
+      };
+    }
+
+    // Do not allow staking over occupied planets
+    if (!planetState.natives) {
+      if (planetState.numSpaceships > 0) {
+        return {
+          success: false,
+          numSpaceshipsLeft: planetState.numSpaceships,
+        };
+      }
+    }
+
+    const numDefense = planetState.natives ? planetInfo.stats.natives : planetState.numSpaceships;
+    const {attackerLoss} = this.combat(
+      10000,
+      BigNumber.from(100000), // TODO use contract _acquireNumSpaceships
+      planetInfo.stats.defense,
+      BigNumber.from(numDefense)
+    );
+
+    if (attackerLoss.lt(100000)) {
+      return {
+        success: true,
+        numSpaceshipsLeft: 100000 - attackerLoss.toNumber(),
+      };
+    } else {
+      return {
+        success: false,
+        numSpaceshipsLeft: planetState.numSpaceships,
+      };
+    }
+  }
+
+
+
+
 }
