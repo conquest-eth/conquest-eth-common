@@ -78,6 +78,6 @@ export type Fleet = {
   amountDestroyed: number;
   timeLeft: number; // not needed to store, except to not require computing stats from from planet
   timeToResolve: number;
-  sending: {id: string; status: 'SUCCESS' | 'FAILURE' | 'LOADING' | 'PENDING' | 'CANCELED' | 'TIMEOUT';}; // TODO use pendingaction type
-  resolution?: {id: string; status: 'SUCCESS' | 'FAILURE' | 'LOADING' | 'PENDING' | 'CANCELED' | 'TIMEOUT';}; // TODO use pendingaction type
+  sending: {id: string; status: 'SUCCESS' | 'FAILURE' | 'LOADING' | 'PENDING' | 'CANCELED' | 'TIMEOUT'; action: {nonce: number}}; // TODO use pendingaction type
+  resolution?: {id: string; status: 'SUCCESS' | 'FAILURE' | 'LOADING' | 'PENDING' | 'CANCELED' | 'TIMEOUT'; action: {nonce: number}}; // TODO use pendingaction type
 };
