@@ -80,4 +80,5 @@ export type Fleet = {
   timeToResolve: number;
   sending: {id: string; status: 'SUCCESS' | 'FAILURE' | 'LOADING' | 'PENDING' | 'CANCELED' | 'TIMEOUT'; action: {nonce: number}}; // TODO use pendingaction type
   resolution?: {id: string; status: 'SUCCESS' | 'FAILURE' | 'LOADING' | 'PENDING' | 'CANCELED' | 'TIMEOUT'; action: {nonce: number}}; // TODO use pendingaction type
+  state: 'SEND_BROADCASTED' | 'TRAVELING' | 'READY_TO_RESOLVE' | 'TOO_LATE_TO_RESOLVE' | 'RESOLVE_BROADCASTED' | 'WAITING_ACKNOWLEDGMENT';
 };
