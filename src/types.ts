@@ -1,4 +1,3 @@
-import {BigNumber} from '@ethersproject/bignumber';
 
 // object including both planet id and global coordinates
 export type PlanetLocation = {
@@ -34,15 +33,6 @@ export type PlanetInfo = {
   stats: Statistics;
 };
 
-// object resulting from a call to the contract : might require transformation
-export type PlanetContractState = {
-  owner: string;
-  numSpaceships: number;
-  lastUpdated: number;
-  active: boolean;
-  exitTime: number;
-  reward: BigNumber;
-};
 
 // object representing the state of the planet // change over time and through actions
 export type PlanetState = {
@@ -56,29 +46,4 @@ export type PlanetState = {
   inReach: boolean;
   reward: string;
   requireClaimAcknowledgement?: string;
-};
-
-// object representing a Plnet with both its static and dynamic state
-// loaded is true once state is established at least once
-export type Planet = PlanetInfo & {
-  state?: PlanetState;
-  loaded: boolean;
-};
-
-export type Position = {x: number; y: number};
-
-// object representing a fleet (publicly)
-export type Fleet = {
-  txHash: string; // TODO better id
-  from: PlanetInfo;
-  to: PlanetInfo;
-  quantity: number; // not needed to store, except to not require contract fetch
-  duration: number;
-  launchTime: number;
-  amountDestroyed: number;
-  timeLeft: number; // not needed to store, except to not require computing stats from from planet
-  timeToResolve: number;
-  sending: {id: string; status: 'SUCCESS' | 'FAILURE' | 'LOADING' | 'PENDING' | 'CANCELED' | 'TIMEOUT'; action: {nonce: number}}; // TODO use pendingaction type
-  resolution?: {id: string; status: 'SUCCESS' | 'FAILURE' | 'LOADING' | 'PENDING' | 'CANCELED' | 'TIMEOUT'; action: {nonce: number}}; // TODO use pendingaction type
-  state: 'SEND_BROADCASTED' | 'TRAVELING' | 'READY_TO_RESOLVE' | 'TOO_LATE_TO_RESOLVE' | 'RESOLVE_BROADCASTED' | 'WAITING_ACKNOWLEDGMENT';
 };
