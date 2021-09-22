@@ -12,7 +12,7 @@ import {
 } from '../util/location';
 import {normal16, normal8, value8Mod} from '../util/extraction';
 import {uniqueName} from '../random/uniqueName'; // TODO in common
-import { BigNumber } from '@ethersproject/bignumber';
+import {BigNumber} from '@ethersproject/bignumber';
 
 function skip(): Promise<void> {
   return new Promise<void>((resolve) => {
@@ -320,32 +320,39 @@ export class SpaceInfo {
     return pointer as StrictLocationPointer<PlanetInfo>;
   }
 
-
   timeLeft(
     time: number,
     fromPlanet: PlanetInfo,
     toPlanet: PlanetInfo,
     startTime: number
   ): {timeLeft: number; timePassed: number; fullTime: number} {
-    const gFromX = fromPlanet.location.globalX;
-    const gFromY = fromPlanet.location.globalY;
-    const gToX = toPlanet.location.globalX;
-    const gToY = toPlanet.location.globalY;
     const speed = fromPlanet.stats.speed;
-    const fullDistance = Math.floor(Math.sqrt(Math.pow(gToX - gFromX, 2) + Math.pow(gToY - gFromY, 2)));
+    const fullDistance = this.distance(fromPlanet, toPlanet);
     const fullTime = fullDistance * ((this.timePerDistance * 10000) / speed);
     const timePassed = time - startTime;
     const timeLeft = fullTime - timePassed;
     return {timeLeft, timePassed, fullTime};
   }
 
-  timeToArrive(fromPlanet: PlanetInfo,
-    toPlanet: PlanetInfo): number {
+  distance(fromPlanet: PlanetInfo, toPlanet: PlanetInfo): number {
+    const gFromX = fromPlanet.location.globalX;
+    const gFromY = fromPlanet.location.globalY;
+    const gToX = toPlanet.location.globalX;
+    const gToY = toPlanet.location.globalY;
+
+    const fullDistance = Math.floor(Math.sqrt(Math.pow(gToX - gFromX, 2) + Math.pow(gToY - gFromY, 2)));
+    return fullDistance;
+  }
+
+  timeToArrive(fromPlanet: PlanetInfo, toPlanet: PlanetInfo): number {
     return this.timeLeft(0, fromPlanet, toPlanet, 0).timeLeft;
   }
 
-
-  numSpaceshipsAtArrival(fromPlanet: PlanetInfo, toPlanet: PlanetInfo, toPlanetState: PlanetState): {min: number; max: number} {
+  numSpaceshipsAtArrival(
+    fromPlanet: PlanetInfo,
+    toPlanet: PlanetInfo,
+    toPlanetState: PlanetState
+  ): {min: number; max: number} {
     const duration = this.timeToArrive(fromPlanet, toPlanet);
     // TODO extract
     const numSpaceships = toPlanetState.numSpaceships;
@@ -355,21 +362,18 @@ export class SpaceInfo {
     }
 
     return {
-      min:
-        numSpaceships +
-        Math.floor((duration * toPlanet.stats.production * this.productionSpeedUp) / (60 * 60)),
+      min: numSpaceships + Math.floor((duration * toPlanet.stats.production * this.productionSpeedUp) / (60 * 60)),
       max:
         numSpaceships +
-        Math.floor(
-          ((duration + this.resolveWindow) * toPlanet.stats.production * this.productionSpeedUp) /
-            (60 * 60)
-        ),
+        Math.floor(((duration + this.resolveWindow) * toPlanet.stats.production * this.productionSpeedUp) / (60 * 60)),
     };
   }
 
   outcome(
-    fromPlanet: PlanetInfo, fromPlanetState: PlanetState,
-    toPlanet: PlanetInfo, toPlanetState: PlanetState,
+    fromPlanet: PlanetInfo,
+    fromPlanetState: PlanetState,
+    toPlanet: PlanetInfo,
+    toPlanetState: PlanetState,
     fleetAmount: number,
     time: number
   ): {
@@ -535,8 +539,4 @@ export class SpaceInfo {
       };
     }
   }
-
-
-
-
 }
