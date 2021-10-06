@@ -395,12 +395,13 @@ export class SpaceInfo {
     toPlanetState: PlanetState,
     fleetAmount: number,
     time: number,
-    gift?: boolean,
-    fromPlayer?: Player,
-    toPlayer?: Player
+    fromPlayer: Player,
+    toPlayer: Player,
+    gift?: boolean
   ): {
     min: {captured: boolean; numSpaceshipsLeft: number};
     max: {captured: boolean; numSpaceshipsLeft: number};
+    allies: boolean;
     giving?: {tax: number; loss: number};
     timeUntilFails: number;
   } {
@@ -409,25 +410,27 @@ export class SpaceInfo {
     const numDefenseMax = BigNumber.from(max);
     let numAttack = BigNumber.from(fleetAmount);
 
-    if (gift) {
-      let loss = 0;
-      let taxed = true;
-      if (toPlayer) {
-        if (toPlayer.address === fromPlayer?.address) {
-          taxed = false;
-        } else if (fromPlayer) {
-          if (toPlayer.alliances.length > 0 && fromPlayer.alliances.length > 0) {
-            const potentialAlliances = findCommonAlliances(
-              toPlayer.alliances.map((v) => v.address),
-              fromPlayer.alliances.map((v) => v.address)
-            );
-            if (potentialAlliances.length > 0) {
-              taxed = false;
-            }
+    let allies = false;
+    if (toPlayer) {
+      if (toPlayer.address === fromPlayer?.address) {
+        allies = true;
+      } else if (fromPlayer) {
+        if (toPlayer.alliances.length > 0 && fromPlayer.alliances.length > 0) {
+          const potentialAlliances = findCommonAlliances(
+            toPlayer.alliances.map((v) => v.address),
+            fromPlayer.alliances.map((v) => v.address)
+          );
+          console.log({potentialAlliances});
+          if (potentialAlliances.length > 0) {
+            allies = true;
           }
         }
       }
-      if (taxed) {
+    }
+
+    if (gift) {
+      let loss = 0;
+      if (!allies) {
         loss = numAttack.mul(GIFT_TAX_PER_10000).div(10000).toNumber();
         numAttack = numAttack.sub(loss);
       }
@@ -441,6 +444,7 @@ export class SpaceInfo {
           numSpaceshipsLeft: numDefenseMax.add(numAttack).toNumber(),
         },
         timeUntilFails: 0,
+        allies,
         giving: {
           tax: GIFT_TAX_PER_10000,
           loss,
@@ -458,6 +462,7 @@ export class SpaceInfo {
           captured: false,
           numSpaceshipsLeft: numDefenseMax.toNumber(),
         },
+        allies,
         timeUntilFails: 0,
       };
     }
@@ -473,6 +478,7 @@ export class SpaceInfo {
           captured: true,
           numSpaceshipsLeft: numAttack.toNumber(),
         },
+        allies,
         timeUntilFails: 0,
       };
     }
@@ -519,7 +525,7 @@ export class SpaceInfo {
       }
     }
 
-    return {min: minOutcome, max: maxOutcome, timeUntilFails};
+    return {min: minOutcome, max: maxOutcome, allies, timeUntilFails};
   }
 
   combat(
