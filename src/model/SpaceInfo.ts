@@ -20,6 +20,25 @@ function skip(): Promise<void> {
   });
 }
 
+const GIFT_TAX_PER_10000 = 2500; // TODO linkedData from contract
+
+// TODO remove duplicate in playersQuery
+type Player = {
+  address: string;
+  alliances: {address: string; ally: boolean}[];
+};
+
+// TODO remove duplication , see send.ts
+function findCommonAlliances(arr1: string[], arr2: string[]): string[] {
+  const result = [];
+  for (const item1 of arr1) {
+    if (arr2.indexOf(item1) !== -1) {
+      result.push(item1);
+    }
+  }
+  return result;
+}
+
 // type Mutable<T> = {
 //   -readonly [k in keyof T]: T[k];
 // };
@@ -375,16 +394,59 @@ export class SpaceInfo {
     toPlanet: PlanetInfo,
     toPlanetState: PlanetState,
     fleetAmount: number,
-    time: number
+    time: number,
+    gift?: boolean,
+    fromPlayer?: Player,
+    toPlayer?: Player
   ): {
     min: {captured: boolean; numSpaceshipsLeft: number};
     max: {captured: boolean; numSpaceshipsLeft: number};
+    giving?: {tax: number; loss: number};
     timeUntilFails: number;
   } {
     const {min, max} = this.numSpaceshipsAtArrival(fromPlanet, toPlanet, toPlanetState);
     const numDefenseMin = BigNumber.from(min);
     const numDefenseMax = BigNumber.from(max);
-    const numAttack = BigNumber.from(fleetAmount);
+    let numAttack = BigNumber.from(fleetAmount);
+
+    if (gift) {
+      let loss = 0;
+      let taxed = true;
+      if (toPlayer) {
+        if (toPlayer.address === fromPlayer?.address) {
+          taxed = false;
+        } else if (fromPlayer) {
+          if (toPlayer.alliances.length > 0 && fromPlayer.alliances.length > 0) {
+            const potentialAlliances = findCommonAlliances(
+              toPlayer.alliances.map((v) => v.address),
+              fromPlayer.alliances.map((v) => v.address)
+            );
+            if (potentialAlliances.length > 0) {
+              taxed = false;
+            }
+          }
+        }
+      }
+      if (taxed) {
+        loss = numAttack.mul(GIFT_TAX_PER_10000).div(10000).toNumber();
+        numAttack = numAttack.sub(loss);
+      }
+      return {
+        min: {
+          captured: false,
+          numSpaceshipsLeft: numDefenseMin.add(numAttack).toNumber(),
+        },
+        max: {
+          captured: false,
+          numSpaceshipsLeft: numDefenseMax.add(numAttack).toNumber(),
+        },
+        timeUntilFails: 0,
+        giving: {
+          tax: GIFT_TAX_PER_10000,
+          loss,
+        },
+      };
+    }
 
     if (numAttack.eq(0)) {
       return {
