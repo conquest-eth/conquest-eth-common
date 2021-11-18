@@ -52,7 +52,9 @@ export class SpaceInfo {
   public readonly resolveWindow: number;
   public readonly timePerDistance: number;
   public readonly exitDuration: number;
+  public readonly acquireNumSpaceships: number;
   public readonly productionSpeedUp: number;
+  public readonly productionCapAsDuration: number;
 
   // public readonly planetsOnFocus: PlanetInfo[] = [];
   // private lastFocus: {x0: number; y0: number; x1: number; y1: number} = {x0: 0, y0: 0, x1: 0, y1: 0};
@@ -63,12 +65,16 @@ export class SpaceInfo {
     resolveWindow: number;
     timePerDistance: number;
     exitDuration: number;
+    acquireNumSpaceships: number;
     productionSpeedUp: number;
+    productionCapAsDuration: number;
   }) {
     this.resolveWindow = config.resolveWindow;
     this.timePerDistance = Math.floor(config.timePerDistance / 4); // Same as in OuterSpace.sol: the coordinates space is 4 times bigger
     this.exitDuration = config.exitDuration;
+    this.acquireNumSpaceships = config.acquireNumSpaceships;
     this.productionSpeedUp = config.productionSpeedUp;
+    this.productionCapAsDuration = config.productionCapAsDuration;
     this.genesis = config.genesisHash;
     // this.store = writable(this.planetsOnFocus);
   }
@@ -380,11 +386,35 @@ export class SpaceInfo {
       return {min: numSpaceships, max: numSpaceships};
     }
 
+    let maxIncrease = Math.pow(2, 31);
+    if (this.productionCapAsDuration && this.productionCapAsDuration > 0) {
+      const cap =
+        this.acquireNumSpaceships +
+        (this.productionCapAsDuration * toPlanet.stats.production * this.productionSpeedUp) / (60 * 60);
+      if (numSpaceships > cap) {
+        maxIncrease = 0;
+      } else {
+        maxIncrease = cap - numSpaceships;
+      }
+    }
+
+    let increaseForMinScenario = Math.floor(
+      (duration * toPlanet.stats.production * this.productionSpeedUp) / (60 * 60)
+    );
+    if (increaseForMinScenario > maxIncrease) {
+      increaseForMinScenario = maxIncrease;
+    }
+
+    let increaseForMaxScenario = Math.floor(
+      ((duration + this.resolveWindow) * toPlanet.stats.production * this.productionSpeedUp) / (60 * 60)
+    );
+    if (increaseForMaxScenario > maxIncrease) {
+      increaseForMaxScenario = maxIncrease;
+    }
+
     return {
-      min: numSpaceships + Math.floor((duration * toPlanet.stats.production * this.productionSpeedUp) / (60 * 60)),
-      max:
-        numSpaceships +
-        Math.floor(((duration + this.resolveWindow) * toPlanet.stats.production * this.productionSpeedUp) / (60 * 60)),
+      min: numSpaceships + increaseForMinScenario,
+      max: numSpaceships + increaseForMaxScenario,
     };
   }
 
