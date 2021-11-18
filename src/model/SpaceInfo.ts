@@ -382,10 +382,6 @@ export class SpaceInfo {
     // TODO extract
     const numSpaceships = toPlanetState.numSpaceships;
 
-    if (!toPlanetState.active) {
-      return {min: numSpaceships, max: numSpaceships};
-    }
-
     let minScenario = numSpaceships;
     let maxScenario = numSpaceships;
     let maxIncrease = Math.pow(2, 31);
@@ -407,32 +403,37 @@ export class SpaceInfo {
         maxIncrease = cap - numSpaceships;
       }
 
-      let increaseForMinScenario = Math.floor(
-        (duration * toPlanet.stats.production * this.productionSpeedUp) / (60 * 60)
-      );
-      if (increaseForMinScenario > maxIncrease) {
-        increaseForMinScenario = maxIncrease;
+      if (toPlanetState.active) {
+        let increaseForMinScenario = Math.floor(
+          (duration * toPlanet.stats.production * this.productionSpeedUp) / (60 * 60)
+        );
+        if (increaseForMinScenario > maxIncrease) {
+          increaseForMinScenario = maxIncrease;
+        }
+        minScenario += increaseForMinScenario;
       }
-      minScenario += increaseForMinScenario;
+
       if (decreaseForMinScenario > minScenario) {
         minScenario = 0; // not possible
       } else {
         minScenario -= decreaseForMinScenario;
       }
 
-      let increaseForMaxScenario = Math.floor(
-        ((duration + this.resolveWindow) * toPlanet.stats.production * this.productionSpeedUp) / (60 * 60)
-      );
-      if (increaseForMaxScenario > maxIncrease) {
-        increaseForMaxScenario = maxIncrease;
+      if (toPlanetState.active) {
+        let increaseForMaxScenario = Math.floor(
+          ((duration + this.resolveWindow) * toPlanet.stats.production * this.productionSpeedUp) / (60 * 60)
+        );
+        if (increaseForMaxScenario > maxIncrease) {
+          increaseForMaxScenario = maxIncrease;
+        }
+        maxScenario += increaseForMaxScenario;
       }
-      maxScenario += increaseForMaxScenario;
       if (decreaseForMaxScenario > maxScenario) {
         maxScenario = 0; // not possible
       } else {
         maxScenario -= decreaseForMaxScenario;
       }
-    } else {
+    } else if (toPlanetState.active) {
       let increaseForMinScenario = Math.floor(
         (duration * toPlanet.stats.production * this.productionSpeedUp) / (60 * 60)
       );
