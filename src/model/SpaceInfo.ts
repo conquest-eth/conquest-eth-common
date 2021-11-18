@@ -386,35 +386,75 @@ export class SpaceInfo {
       return {min: numSpaceships, max: numSpaceships};
     }
 
+    let minScenario = numSpaceships;
+    let maxScenario = numSpaceships;
     let maxIncrease = Math.pow(2, 31);
     if (this.productionCapAsDuration && this.productionCapAsDuration > 0) {
-      const cap =
-        this.acquireNumSpaceships +
-        (this.productionCapAsDuration * toPlanet.stats.production * this.productionSpeedUp) / (60 * 60);
+      let decreaseForMaxScenario = 0;
+      let decreaseForMinScenario = 0;
+      const cap = this.acquireNumSpaceships + (this.productionCapAsDuration * toPlanet.stats.production) / (60 * 60);
       if (numSpaceships > cap) {
+        decreaseForMinScenario = duration; // 1 per second
+        if (decreaseForMinScenario > numSpaceships - cap) {
+          decreaseForMinScenario = numSpaceships - cap;
+        }
+        decreaseForMaxScenario = duration + this.resolveWindow; // 1 per second
+        if (decreaseForMaxScenario > numSpaceships - cap) {
+          decreaseForMaxScenario = numSpaceships - cap;
+        }
         maxIncrease = 0;
       } else {
         maxIncrease = cap - numSpaceships;
       }
-    }
 
-    let increaseForMinScenario = Math.floor(
-      (duration * toPlanet.stats.production * this.productionSpeedUp) / (60 * 60)
-    );
-    if (increaseForMinScenario > maxIncrease) {
-      increaseForMinScenario = maxIncrease;
-    }
+      let increaseForMinScenario = Math.floor(
+        (duration * toPlanet.stats.production * this.productionSpeedUp) / (60 * 60)
+      );
+      if (increaseForMinScenario > maxIncrease) {
+        increaseForMinScenario = maxIncrease;
+      }
+      minScenario += increaseForMinScenario;
+      if (decreaseForMinScenario > minScenario) {
+        minScenario = 0; // not possible
+      } else {
+        minScenario -= decreaseForMinScenario;
+      }
 
-    let increaseForMaxScenario = Math.floor(
-      ((duration + this.resolveWindow) * toPlanet.stats.production * this.productionSpeedUp) / (60 * 60)
-    );
-    if (increaseForMaxScenario > maxIncrease) {
-      increaseForMaxScenario = maxIncrease;
+      let increaseForMaxScenario = Math.floor(
+        ((duration + this.resolveWindow) * toPlanet.stats.production * this.productionSpeedUp) / (60 * 60)
+      );
+      if (increaseForMaxScenario > maxIncrease) {
+        increaseForMaxScenario = maxIncrease;
+      }
+      maxScenario += increaseForMaxScenario;
+      if (decreaseForMaxScenario > maxScenario) {
+        maxScenario = 0; // not possible
+      } else {
+        maxScenario -= decreaseForMaxScenario;
+      }
+    } else {
+      let increaseForMinScenario = Math.floor(
+        (duration * toPlanet.stats.production * this.productionSpeedUp) / (60 * 60)
+      );
+      if (increaseForMinScenario > maxIncrease) {
+        increaseForMinScenario = maxIncrease;
+      }
+
+      minScenario = numSpaceships + increaseForMinScenario;
+
+      let increaseForMaxScenario = Math.floor(
+        ((duration + this.resolveWindow) * toPlanet.stats.production * this.productionSpeedUp) / (60 * 60)
+      );
+      if (increaseForMaxScenario > maxIncrease) {
+        increaseForMaxScenario = maxIncrease;
+      }
+
+      maxScenario = numSpaceships + increaseForMaxScenario;
     }
 
     return {
-      min: numSpaceships + increaseForMinScenario,
-      max: numSpaceships + increaseForMaxScenario,
+      min: minScenario,
+      max: maxScenario,
     };
   }
 
