@@ -55,6 +55,7 @@ export class SpaceInfo {
   public readonly acquireNumSpaceships: number;
   public readonly productionSpeedUp: number;
   public readonly productionCapAsDuration: number;
+  public readonly fleetSizeFactor6: number;
 
   // public readonly planetsOnFocus: PlanetInfo[] = [];
   // private lastFocus: {x0: number; y0: number; x1: number; y1: number} = {x0: 0, y0: 0, x1: 0, y1: 0};
@@ -68,6 +69,7 @@ export class SpaceInfo {
     acquireNumSpaceships: number;
     productionSpeedUp: number;
     productionCapAsDuration: number;
+    fleetSizeFactor6: number;
   }) {
     this.resolveWindow = config.resolveWindow;
     this.timePerDistance = Math.floor(config.timePerDistance / 4); // Same as in OuterSpace.sol: the coordinates space is 4 times bigger
@@ -75,6 +77,7 @@ export class SpaceInfo {
     this.acquireNumSpaceships = config.acquireNumSpaceships;
     this.productionSpeedUp = config.productionSpeedUp;
     this.productionCapAsDuration = config.productionCapAsDuration;
+    this.fleetSizeFactor6 = config.fleetSizeFactor6;
     this.genesis = config.genesisHash;
     // this.store = writable(this.planetsOnFocus);
   }
@@ -605,7 +608,10 @@ export class SpaceInfo {
     defense: number,
     numDefense: BigNumber
   ): {defenderLoss: BigNumber; attackerLoss: BigNumber; attackDamage: BigNumber} {
-    const attackDamage = numAttack.mul(attack).div(defense);
+    const attackFactor = numAttack.mul(
+      BigNumber.from(1000000).sub(this.fleetSizeFactor6).add(numAttack.mul(this.fleetSizeFactor6).div(numDefense))
+    );
+    const attackDamage = attackFactor.mul(attack).div(defense).div(1000000);
 
     if (numAttack.eq(0) || numDefense.eq(0)) {
       return {defenderLoss: BigNumber.from(0), attackerLoss: BigNumber.from(0), attackDamage};
@@ -620,7 +626,10 @@ export class SpaceInfo {
       };
     } else {
       // attack succeed
-      let defenseDamage = numDefense.mul(defense).div(attack);
+      const defenseFactor = numDefense.mul(
+        BigNumber.from(1000000).sub(this.fleetSizeFactor6).add(numDefense.mul(this.fleetSizeFactor6).div(numAttack))
+      );
+      let defenseDamage = defenseFactor.mul(defense).div(attack).div(1000000);
       if (defenseDamage.gte(numAttack)) {
         defenseDamage = numAttack.sub(1);
       }
