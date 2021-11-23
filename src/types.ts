@@ -1,4 +1,3 @@
-
 // object including both planet id and global coordinates
 export type PlanetLocation = {
   id: string;
@@ -33,7 +32,6 @@ export type PlanetInfo = {
   stats: Statistics;
 };
 
-
 // object representing the state of the planet // change over time and through actions
 export type PlanetState = {
   owner?: string;
@@ -44,6 +42,6 @@ export type PlanetState = {
   natives: boolean;
   capturing: boolean; // TODO add error state
   inReach: boolean;
-  reward: string;
+  rewardGiver: string;
   requireClaimAcknowledgement?: string;
 };
