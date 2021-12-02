@@ -651,7 +651,7 @@ export class SpaceInfo {
     numSpaceshipsLeft: number;
   } {
     console.log(planetState.owner, from);
-    if (planetState.owner && planetState.owner.toLowerCase() === from.toLowerCase()) {
+    if (planetState.owner && planetState.owner?.toLowerCase() === from?.toLowerCase()) {
       return {
         success: true,
         numSpaceshipsLeft: planetState.numSpaceships + 100000, // TODO use contract _acquireNumSpaceships
