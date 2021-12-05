@@ -357,7 +357,7 @@ export class SpaceInfo {
   ): {timeLeft: number; timePassed: number; fullTime: number} {
     const speed = fromPlanet.stats.speed;
     const fullDistance = this.distance(fromPlanet, toPlanet);
-    const fullTime = fullDistance * ((this.timePerDistance * 10000) / speed);
+    const fullTime = Math.floor(fullDistance * ((this.timePerDistance * 10000) / speed));
     const timePassed = time - startTime;
     const timeLeft = fullTime - timePassed;
     return {timeLeft, timePassed, fullTime};
@@ -392,7 +392,9 @@ export class SpaceInfo {
     if (this.productionCapAsDuration && this.productionCapAsDuration > 0) {
       let decreaseForMaxScenario = 0;
       let decreaseForMinScenario = 0;
-      const cap = this.acquireNumSpaceships + (this.productionCapAsDuration * toPlanet.stats.production) / (60 * 60);
+      const cap = Math.floor(
+        this.acquireNumSpaceships + (this.productionCapAsDuration * toPlanet.stats.production) / (60 * 60)
+      );
       if (numSpaceships > cap) {
         decreaseForMinScenario = duration; // 1 per second
         if (decreaseForMinScenario > numSpaceships - cap) {
