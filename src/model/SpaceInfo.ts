@@ -514,7 +514,7 @@ export class SpaceInfo {
         if (gift) {
           actualGift = allies;
         } else {
-          actualGift = !allies;
+          actualGift = allies;
         }
       } else {
         if (toPlayer && toPlayer.address.toLowerCase() === specific.toLowerCase()) {
