@@ -380,9 +380,10 @@ export class SpaceInfo {
   numSpaceshipsAtArrival(
     fromPlanet: PlanetInfo,
     toPlanet: PlanetInfo,
-    toPlanetState: PlanetState
+    toPlanetState: PlanetState,
+    timeTraveled = 0
   ): {min: number; max: number} {
-    const duration = this.timeToArrive(fromPlanet, toPlanet);
+    const duration = this.timeToArrive(fromPlanet, toPlanet) - timeTraveled;
     // TODO extract
     const numSpaceships = toPlanetState.numSpaceships;
 
@@ -471,9 +472,9 @@ export class SpaceInfo {
     toPlanet: PlanetInfo,
     toPlanetState: PlanetState,
     fleetAmount: number,
-    time: number,
-    fromPlayer: Player,
-    toPlayer: Player,
+    timeTraveled: number,
+    fromPlayer?: Player,
+    toPlayer?: Player,
     gift?: boolean
   ): {
     min: {captured: boolean; numSpaceshipsLeft: number};
@@ -482,7 +483,7 @@ export class SpaceInfo {
     giving?: {tax: number; loss: number};
     timeUntilFails: number;
   } {
-    const {min, max} = this.numSpaceshipsAtArrival(fromPlanet, toPlanet, toPlanetState);
+    const {min, max} = this.numSpaceshipsAtArrival(fromPlanet, toPlanet, toPlanetState, timeTraveled);
     const numDefenseMin = BigNumber.from(min);
     const numDefenseMax = BigNumber.from(max);
     let numAttack = BigNumber.from(fleetAmount);
