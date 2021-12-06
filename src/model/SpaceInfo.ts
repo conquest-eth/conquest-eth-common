@@ -475,7 +475,8 @@ export class SpaceInfo {
     timeTraveled: number,
     fromPlayer?: Player,
     toPlayer?: Player,
-    gift?: boolean
+    gift?: boolean,
+    specific?: string
   ): {
     min: {captured: boolean; numSpaceshipsLeft: number};
     max: {captured: boolean; numSpaceshipsLeft: number};
@@ -506,7 +507,24 @@ export class SpaceInfo {
       }
     }
 
-    if (gift) {
+    let actualGift = gift;
+
+    if (specific) {
+      if (specific === '0x0000000000000000000000000000000000000001') {
+        if (gift) {
+          actualGift = allies;
+        } else {
+          actualGift = !allies;
+        }
+      } else {
+        if (toPlayer && toPlayer.address.toLowerCase() === specific.toLowerCase()) {
+        }
+      }
+      // TODO more
+    }
+
+    if (actualGift) {
+      // TODO specific
       let loss = 0;
       if (!allies) {
         loss = numAttack.mul(GIFT_TAX_PER_10000).div(10000).toNumber();
