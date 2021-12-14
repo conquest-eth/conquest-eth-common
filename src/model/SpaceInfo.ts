@@ -630,14 +630,14 @@ export class SpaceInfo {
     defense: number,
     numDefense: BigNumber
   ): {defenderLoss: BigNumber; attackerLoss: BigNumber; attackDamage: BigNumber} {
+    if (numAttack.eq(0) || numDefense.eq(0)) {
+      return {defenderLoss: BigNumber.from(0), attackerLoss: BigNumber.from(0), attackDamage: BigNumber.from(0)};
+    }
+
     const attackFactor = numAttack.mul(
       BigNumber.from(1000000).sub(this.fleetSizeFactor6).add(numAttack.mul(this.fleetSizeFactor6).div(numDefense))
     );
     const attackDamage = attackFactor.mul(attack).div(defense).div(1000000);
-
-    if (numAttack.eq(0) || numDefense.eq(0)) {
-      return {defenderLoss: BigNumber.from(0), attackerLoss: BigNumber.from(0), attackDamage};
-    }
 
     if (numDefense.gt(attackDamage)) {
       // attack fails
