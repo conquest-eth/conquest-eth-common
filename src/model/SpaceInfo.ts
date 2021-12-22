@@ -472,6 +472,7 @@ export class SpaceInfo {
     toPlanet: PlanetInfo,
     toPlanetState: PlanetState,
     fleetAmount: number,
+    fleetLaunchTime: number,
     timeTraveled: number,
     fromPlayer?: Player,
     toPlayer?: Player,
@@ -513,6 +514,20 @@ export class SpaceInfo {
       if (specific === '0x0000000000000000000000000000000000000001') {
         if (gift) {
           actualGift = allies;
+
+          // -------------------------------------------------------------------------------------------------------------------------------------
+          // TODO remove  exception to fix bug for player 0xb006c644258e01b437eff06e16e56e938a239712 and its sending gifts
+          // -------------------------------------------------------------------------------------------------------------------------------------
+          if (
+            fleetLaunchTime < 1640165416 &&
+            !allies &&
+            fromPlayer?.address.toLowerCase() == '0xb006c644258e01b437eff06e16e56e938a239712' &&
+            (toPlayer?.address.toLowerCase() == '0x9dab5a6393eef78eb36cd84bb9bbb055189429a5' ||
+              toPlayer?.address.toLowerCase() == '0xf8b109af18cfa614bef1c2899e522d77b3c64c14')
+          ) {
+            actualGift = true;
+          }
+          // -------------------------------------------------------------------------------------------------------------------------------------
         } else {
           actualGift = allies;
         }
