@@ -377,6 +377,52 @@ export class SpaceInfo {
     return this.timeLeft(0, fromPlanet, toPlanet, 0).timeLeft;
   }
 
+  numSpaceshipsAfterDuration(toPlanet: PlanetInfo, toPlanetState: PlanetState, duration: number): number {
+    const numSpaceships = toPlanetState.numSpaceships;
+
+    let numSpaceshipsAfter = numSpaceships;
+
+    let maxIncrease = Math.pow(2, 31);
+    if (this.productionCapAsDuration && this.productionCapAsDuration > 0) {
+      let decrease = 0;
+      const cap = Math.floor(
+        this.acquireNumSpaceships + (this.productionCapAsDuration * toPlanet.stats.production) / (60 * 60)
+      );
+      if (numSpaceships > cap) {
+        decrease = duration; // 1 per second
+        if (decrease > numSpaceships - cap) {
+          decrease = numSpaceships - cap;
+        }
+        maxIncrease = 0;
+      } else {
+        maxIncrease = cap - numSpaceships;
+      }
+
+      if (toPlanetState.active) {
+        let increase = Math.floor((duration * toPlanet.stats.production * this.productionSpeedUp) / (60 * 60));
+        if (increase > maxIncrease) {
+          increase = maxIncrease;
+        }
+        numSpaceshipsAfter += increase;
+      }
+
+      if (decrease > numSpaceshipsAfter) {
+        numSpaceshipsAfter = 0; // not possible
+      } else {
+        numSpaceshipsAfter -= decrease;
+      }
+    } else if (toPlanetState.active) {
+      let increase = Math.floor((duration * toPlanet.stats.production * this.productionSpeedUp) / (60 * 60));
+      if (increase > maxIncrease) {
+        increase = maxIncrease;
+      }
+
+      numSpaceshipsAfter = numSpaceships + increase;
+    }
+
+    return numSpaceshipsAfter;
+  }
+
   numSpaceshipsAtArrival(
     fromPlanet: PlanetInfo,
     toPlanet: PlanetInfo,
