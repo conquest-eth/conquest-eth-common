@@ -23,10 +23,7 @@ export function locationToXY(location: string): {x: number; y: number} {
 }
 
 function toByteString(from: number, width: number): string {
-  return hexZeroPad(
-    BigNumber.from(from).toTwos(width).toHexString(),
-    Math.floor(width / 8)
-  );
+  return hexZeroPad(BigNumber.from(from).toTwos(width).toHexString(), Math.floor(width / 8));
 }
 
 export function xyToLocation(x: number, y: number): string {
@@ -59,10 +56,7 @@ export function areaFromLocation(locationX: number, locationY: number): string {
   return xyToLocation(centerAreaX, centerAreaY);
 }
 
-export function areasArroundLocation(
-  locationX: number,
-  locationY: number
-): string[] {
+export function areasArroundLocation(locationX: number, locationY: number): string[] {
   const absX = Math.abs(locationX);
   const signX = locationX < -12 ? -1 : 1;
   const centerAreaX = signX * Math.floor((absX + 12) / 24);
@@ -114,10 +108,7 @@ export function zoneFromLocation(locationX: number, locationY: number): string {
   return xyToLocation(centerZoneX, centerZoneY);
 }
 
-export function zonesFromLocation(
-  locationX: number,
-  locationY: number
-): string[] {
+export function zonesFromLocation(locationX: number, locationY: number): string[] {
   const absX = Math.abs(locationX);
   const signX = locationX < -32 ? -1 : 1;
   const centerZoneX = signX * Math.floor((absX + 32) / 64);
@@ -157,9 +148,7 @@ export type LocationPointer<T> = {
 };
 
 // let path = [];
-export function nextInSpiral<T>(
-  pointer?: LocationPointer<T> | StrictLocationPointer<T>
-): LocationPointer<T> {
+export function nextInSpiral<T>(pointer?: LocationPointer<T> | StrictLocationPointer<T>): LocationPointer<T> {
   if (!pointer) {
     // path = [{x: 0, y: 0, dx: 0, dy: -1}];
     return {x: 0, y: 0, dx: 0, dy: -1, index: 0, data: undefined};
@@ -170,12 +159,7 @@ export function nextInSpiral<T>(
   const x = pointer.x + dx;
   const y = pointer.y + dy;
 
-  if (
-    (x == 0 && y == -1) ||
-    x == y ||
-    (x < 0 && x == -y) ||
-    (x > 0 && -x - 1 == y)
-  ) {
+  if ((x == 0 && y == -1) || x == y || (x < 0 && x == -y) || (x > 0 && -x - 1 == y)) {
     const tmp = dy;
     dy = -dx;
     dx = tmp;
