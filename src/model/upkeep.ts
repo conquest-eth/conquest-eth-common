@@ -111,8 +111,14 @@ export function send(planet: FakePlanet, time: number, quantity: number) {
     }
     let newUpKeep = 0;
     if (newDuration > 0) {
+      // newUpKeep =
+      //   (-planet.world.externalUpkeepDownRate * planet.externalUpkeepDuration * planet.externalUpkeepDuration +
+      //     2 * newDuration * quantity +
+      //     2 * planet.externalUpkeepDuration * planet.externalUpkeep) /
+      //   (2 * newDuration);
       newUpKeep =
-        (-planet.world.externalUpkeepDownRate * planet.externalUpkeepDuration * planet.externalUpkeepDuration +
+        (newDuration * newDuration * planet.world.externalUpkeepDownRate -
+          planet.world.externalUpkeepDownRate * planet.externalUpkeepDuration * planet.externalUpkeepDuration +
           2 * newDuration * quantity +
           2 * planet.externalUpkeepDuration * planet.externalUpkeep) /
         (2 * newDuration);

@@ -165,6 +165,39 @@ describe('peek and send', () => {
       peek(planet, days(0.5));
       peek(planet, days(0.5));
       peek(planet, days(0.5));
+
+      peek(planet, days(0.5));
+      peek(planet, days(0.5));
+      peek(planet, days(0.5));
+      peek(planet, days(0.5));
+      peek(planet, days(0.5));
+      peek(planet, days(0.5));
+    });
+    it.only('works with multi send', () => {
+      const planet = defaultPlanet({
+        stats: defaultConfig.stats,
+        world: {externalUpKeepDuration: days(3), externalUpkeepDownRate: defaultConfig.world.externalUpkeepDownRate},
+      });
+      peek(planet, days(1));
+      peek(planet, days(1));
+      peek(planet, days(1));
+      send(planet, days(0), 259200 / 2);
+      send(planet, days(0), 259200 / 2);
+      peek(planet, days(0.5));
+      peek(planet, days(0));
+      peek(planet, days(0.5));
+      peek(planet, days(0.5));
+      peek(planet, days(0.5));
+      peek(planet, days(0.5));
+      peek(planet, days(0.5));
+      peek(planet, days(0.5));
+      send(planet, days(0), 52200);
+      peek(planet, days(0.5));
+      peek(planet, days(0.5));
+      peek(planet, days(0.5));
+      peek(planet, days(0.5));
+      peek(planet, days(0.5));
+      peek(planet, days(0.5));
     });
   });
 });
