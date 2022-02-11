@@ -1,17 +1,3 @@
-// export type FakePlanet = {
-//   stats: {
-//     production: number;
-//     maxUpkeep: number;
-//   };
-//   world: {
-//     externalUpKeepDuration: number;
-//   };
-//   numSpaceships: number;
-//   lastUpdate: number;
-//   externalUpkeep: number;
-//   externalUpkeepDownRate: number;
-// };
-
 export type FakePlanet = {
   stats: {
     production: number;
@@ -35,47 +21,8 @@ export const DEFAULT_UPKEEP_DURATION_IN_SECONDS = days(1);
 export const DEFAULT_PRODUCTION_PER_HOUR = 3600;
 export const DEFAULT_MAX_UPKEEP = (DEFAULT_PRODUCTION_PER_HOUR * days(3)) / 3600;
 
-// export function peek(planet: FakePlanet, time: number) {
-//   const timeElapsed = time - planet.lastUpdate;
-//   if (timeElapsed < 0) {
-//     throw new Error(`canno go backward`);
-//   }
-//   const staticArea = planet.numSpaceships * timeElapsed;
-//   const newSpaceshipsProduced = (planet.stats.production * timeElapsed) / 3600;
-//   const productionArea = (newSpaceshipsProduced * timeElapsed) / 2;
-
-//   let externalArea = 0;
-//   if (planet.externalUpkeep > 0) {
-//     const decrease = Math.min(planet.externalUpkeepDownRate * timeElapsed, planet.externalUpkeep);
-//     const externalDecreaseArea = (decrease * timeElapsed) / 2;
-
-//     const externalStaticArea = planet.externalUpkeep * timeElapsed;
-//     externalArea = externalDecreaseArea + externalStaticArea;
-//     planet.externalUpkeep -= decrease;
-//   }
-
-//   const totalArea = staticArea + productionArea + externalArea;
-
-//   const maxUpKeepForThatPeriod = planet.stats.maxUpkeep * timeElapsed;
-//   const maxRatio = totalArea / maxUpKeepForThatPeriod;
-
-//   let spaceshipsDestroyedByUpkeep = 0;
-//   if (maxRatio >= 1) {
-//     // console.log(`max ratio reached : ${totalArea} vs ${planet.stats.maxUpkeep}`);
-//     // console.log({totalArea, staticArea, productionArea, newSpaceshipsProduced, timeElapsed});
-//     // spaceshipsDestroyedByUpkeep = maxRatio * planet.stats.production * timeElapsed;
-//     spaceshipsDestroyedByUpkeep = newSpaceshipsProduced;
-//   }
-
-//   const newSpaceships = newSpaceshipsProduced - spaceshipsDestroyedByUpkeep;
-//   planet.numSpaceships += newSpaceships;
-//   console.log({numSpaceships: planet.numSpaceships});
-//   // console.log({numSpaceships: planet.numSpaceships, externalArea, maxUpKeepForThatPeriod});
-//   // console.log({newSpaceships, spaceships: planet.numSpaceships, maxUpKeepForThatPeriod, totalArea});
-// }
-
-export function peek(planet: FakePlanet, time: number) {
-  const timeElapsed = time - planet.lastUpdate;
+export function peek(planet: FakePlanet, timeDelta: number) {
+  const timeElapsed = timeDelta; // time - planet.lastUpdate;
   if (timeElapsed < 0) {
     throw new Error(`canno go backward`);
   }
@@ -125,43 +72,17 @@ export function peek(planet: FakePlanet, time: number) {
       planet.numSpaceships = 0;
     }
   }
+  planet.lastUpdate += timeElapsed;
+
   if (isNaN(planet.numSpaceships)) {
     console.log(planet, {timeElapsed, oldSpaceships});
   } else {
-    console.log({numSpaceships: planet.numSpaceships});
+    console.log({numSpaceships: planet.numSpaceships, numDays: Math.floor((timeElapsed / (24 * 3600)) * 100) / 100});
   }
-
   // console.log({numSpaceships: planet.numSpaceships, externalArea, maxUpKeepForThatPeriod});
   // console.log({newSpaceships, spaceships: planet.numSpaceships, maxUpKeepForThatPeriod, totalArea});
   // console.log(planet);
 }
-
-// export function send(planet: FakePlanet, time: number, quantity: number) {
-//   peek(planet, time);
-//   if (quantity < 0) {
-//     throw new Error(`cannot send negative spaceships`);
-//   }
-//   if (quantity > planet.numSpaceships) {
-//     throw new Error(`not enough spaceships`);
-//   }
-//   if (quantity === 0) {
-//     return;
-//   }
-
-//   planet.numSpaceships -= quantity;
-
-//   if (planet.externalUpkeep === 0) {
-//     planet.externalUpkeep = quantity;
-//     planet.externalUpkeepDownRate = quantity / planet.world.externalUpKeepDuration;
-//   } else {
-//     const durationLeft = planet.externalUpkeep / planet.externalUpkeepDownRate;
-//     const extraUpkeep = quantity;
-//     const newDuration = planet.world.externalUpKeepDuration;
-//     const newUpKeep = (planet.externalUpkeep * durationLeft + extraUpkeep * newDuration) / newDuration;
-//     planet.externalUpkeep = newUpKeep;
-//     planet.externalUpkeepDownRate = planet.externalUpkeep / planet.world.externalUpKeepDuration;
-//   }
-// }
 
 export function send(planet: FakePlanet, time: number, quantity: number) {
   peek(planet, time);
@@ -185,6 +106,9 @@ export function send(planet: FakePlanet, time: number, quantity: number) {
     if (quantity / planet.world.externalUpkeepDownRate > newDuration) {
       newDuration = quantity / planet.world.externalUpkeepDownRate;
     }
+    if (newDuration > planet.world.externalUpKeepDuration) {
+      newDuration = planet.world.externalUpKeepDuration; // TODO update equation
+    }
     let newUpKeep = 0;
     if (newDuration > 0) {
       newUpKeep =
@@ -193,14 +117,21 @@ export function send(planet: FakePlanet, time: number, quantity: number) {
           2 * planet.externalUpkeepDuration * planet.externalUpkeep) /
         (2 * newDuration);
     } else {
-      console.log(planet);
+      console.log('negative newDuration', planet);
     }
 
     planet.externalUpkeep = newUpKeep;
     planet.externalUpkeepDuration = newDuration;
     if (planet.externalUpkeep < 0) {
+      console.log(`external upkepp negative`, planet, {
+        newDuration,
+        t: planet.externalUpkeepDuration,
+        R: planet.world.externalUpkeepDownRate,
+      });
       planet.externalUpkeep = 0;
       planet.externalUpkeepDuration = 0;
     }
   }
+  // console.log({afterSend: planet.numSpaceships});
+  console.log(planet);
 }
