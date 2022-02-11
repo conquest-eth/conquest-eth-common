@@ -10,7 +10,8 @@
     "declaration": true,
     "declarationMap": true,
     "sourceMap": true,
-    "outDir": "lib/esm"
+    "outDir": "lib/esm",
+    "typeRoots": ["./node_modules/@types", "./typings"]
   },
-  "include": ["./src"]
+  "include": ["./test", "./src/**/*"]
 }
