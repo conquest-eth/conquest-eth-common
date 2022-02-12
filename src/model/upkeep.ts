@@ -39,7 +39,7 @@ export function peek(planet: FakePlanet, timeDelta: number) {
     externalArea = externalDecreaseArea + externalStaticArea;
     planet.externalUpkeep -= decrease;
     planet.externalUpkeepDuration -= actualTime;
-    if (planet.externalUpkeep < 0) {
+    if (planet.externalUpkeep <= 0 || planet.externalUpkeepDuration <= 0) {
       planet.externalUpkeep = 0;
       planet.externalUpkeepDuration = 0;
     }
@@ -77,15 +77,19 @@ export function peek(planet: FakePlanet, timeDelta: number) {
   if (isNaN(planet.numSpaceships)) {
     console.log(planet, {timeElapsed, oldSpaceships});
   } else {
-    console.log({numSpaceships: planet.numSpaceships, numDays: Math.floor((timeElapsed / (24 * 3600)) * 100) / 100});
+    console.log({
+      numSpaceships: planet.numSpaceships,
+      externalUpkeep: planet.externalUpkeep,
+      numDays: Math.floor((timeElapsed / (24 * 3600)) * 100) / 100,
+    });
   }
   // console.log({numSpaceships: planet.numSpaceships, externalArea, maxUpKeepForThatPeriod});
   // console.log({newSpaceships, spaceships: planet.numSpaceships, maxUpKeepForThatPeriod, totalArea});
   // console.log(planet);
 }
 
-export function send(planet: FakePlanet, time: number, quantity: number) {
-  peek(planet, time);
+export function send(planet: FakePlanet, timeDelta: number, quantity: number) {
+  peek(planet, timeDelta);
   if (quantity < 0) {
     throw new Error(`cannot send negative spaceships`);
   }
@@ -138,6 +142,64 @@ export function send(planet: FakePlanet, time: number, quantity: number) {
       planet.externalUpkeepDuration = 0;
     }
   }
-  // console.log({afterSend: planet.numSpaceships});
-  console.log(planet);
+  console.log({afterSend: planet.numSpaceships});
+  // console.log(planet);
 }
+
+export function countArrival(planet: FakePlanet, timeDelta: number, quantity: number, startTime: number) {
+  peek(planet, timeDelta);
+  const currentTime = planet.lastUpdate; // TODO better
+  if (quantity < 0) {
+    throw new Error(`cannot send negative spaceships`);
+  }
+  if (quantity === 0) {
+    console.log(`zero quantity`);
+    return;
+  }
+
+  if (planet.externalUpkeep === 0) {
+    console.log(`zero upkeep`);
+    return;
+  } else {
+    const timeLeftToConsume = planet.world.externalUpKeepDuration - (currentTime - startTime);
+    if (timeLeftToConsume <= 0) {
+      console.log(`no time left to consume, currentTime: ${currentTime}, startTime: ${startTime}`);
+      return;
+    }
+    const areaLeft = timeLeftToConsume * quantity;
+
+    const newUpKeep =
+      (planet.externalUpkeepDuration * planet.externalUpkeep - areaLeft) / planet.externalUpkeepDuration;
+
+    planet.externalUpkeep = newUpKeep;
+    if (planet.externalUpkeep < 0) {
+      // console.log(`external upkepp negative, happen for last`, planet, {
+      //   t: planet.externalUpkeepDuration,
+      //   R: planet.world.externalUpkeepDownRate,
+      // });
+      planet.externalUpkeep = 0;
+      planet.externalUpkeepDuration = 0;
+    }
+  }
+  // console.log(`afterArrival`, planet);
+  // console.log(planet);
+}
+
+export function receiveSpaceships(planet: FakePlanet, timeDelta: number, quantity: number) {
+  peek(planet, timeDelta);
+  if (quantity < 0) {
+    throw new Error(`cannot receive negative spaceships`);
+  }
+  if (quantity === 0) {
+    console.log(`zero quantity`);
+    return;
+  }
+  planet.numSpaceships += quantity;
+}
+
+// pseudo code for new production
+
+// if numSPaceships > MAX -> decrease
+// if (numSpaceships + externalUpkeep > MAX) -> compute when it goes back to MAX,
+// if that time is in the future -> decrease
+// if that time is in the past -> compute the decrease, but also compute the increase past that time ? => compute when the externalUpKeep vanish, before that time compute the growth based on the diff netween prod rate  and upkeep rate, after that grow as usual, until numSPaceship reach MAX

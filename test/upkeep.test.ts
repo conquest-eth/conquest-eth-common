@@ -1,5 +1,6 @@
 import {expect} from 'chai';
 import {
+  countArrival,
   days,
   DEFAULT_MAX_UPKEEP,
   DEFAULT_PRODUCTION_PER_HOUR,
@@ -129,7 +130,7 @@ describe('peek and send', () => {
       peek(planet, days(0.5));
       peek(planet, days(0.5));
     });
-    it.only('works with multi send', () => {
+    it('works with multi send', () => {
       const planet = defaultPlanet({
         stats: defaultConfig.stats,
         world: {externalUpKeepDuration: days(3), externalUpkeepDownRate: defaultConfig.world.externalUpkeepDownRate},
@@ -147,7 +148,7 @@ describe('peek and send', () => {
       peek(planet, days(0.5));
       peek(planet, days(0.5));
     });
-    it.only('works with multi send', () => {
+    it('works with multi send', () => {
       const planet = defaultPlanet({
         stats: defaultConfig.stats,
         world: {externalUpKeepDuration: days(3), externalUpkeepDownRate: defaultConfig.world.externalUpkeepDownRate},
@@ -193,6 +194,37 @@ describe('peek and send', () => {
       peek(planet, days(0.5));
       send(planet, days(0), 52200);
       peek(planet, days(0.5));
+      peek(planet, days(0.5));
+      peek(planet, days(0.5));
+      peek(planet, days(0.5));
+      peek(planet, days(0.5));
+      peek(planet, days(0.5));
+    });
+    it.only('works with multi send', () => {
+      const planet = defaultPlanet({
+        stats: defaultConfig.stats,
+        world: {externalUpKeepDuration: days(3), externalUpkeepDownRate: defaultConfig.world.externalUpkeepDownRate},
+      });
+      peek(planet, days(1));
+      peek(planet, days(1));
+      peek(planet, days(1));
+      send(planet, days(0), 259200 / 2);
+      send(planet, days(0), 259200 / 2);
+      peek(planet, days(0.5));
+      peek(planet, days(0));
+      peek(planet, days(0.5));
+      peek(planet, days(0.5));
+      peek(planet, days(0.5));
+      peek(planet, days(0.5));
+      peek(planet, days(0.5));
+      peek(planet, days(0.5));
+      send(planet, days(0), 52200);
+      const startTime = planet.lastUpdate;
+      peek(planet, days(0.5));
+      send(planet, days(0), 34140);
+      const startTime2 = planet.lastUpdate;
+      peek(planet, days(0.5));
+      countArrival(planet, days(0), 52200, startTime);
       peek(planet, days(0.5));
       peek(planet, days(0.5));
       peek(planet, days(0.5));
