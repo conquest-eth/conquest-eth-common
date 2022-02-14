@@ -9,7 +9,8 @@
     "declaration": true,
     "declarationMap": true,
     "sourceMap": true,
-    "typeRoots": ["./node_modules/@types", "./typings"]
+    "typeRoots": ["./node_modules/@types", "./typings"],
+    "outDir": "lib/default"
   },
   "include": ["./test", "./src/**/*"]
 }
