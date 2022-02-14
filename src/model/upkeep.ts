@@ -46,7 +46,7 @@ export function peek(planet: FakePlanet, timeDelta: number) {
   }
 
   if (planet.numSpaceships >= planet.stats.maxUpkeep) {
-    planet.numSpaceships = planet.numSpaceships - (timeElapsed * planet.stats.production) / 2; // TODO
+    planet.numSpaceships = planet.numSpaceships - (timeElapsed * planet.stats.production) / 3600 / 2; // TODO
     if (planet.numSpaceships < planet.stats.maxUpkeep) {
       planet.numSpaceships = planet.stats.maxUpkeep;
     }
@@ -195,6 +195,7 @@ export function receiveSpaceships(planet: FakePlanet, timeDelta: number, quantit
     return;
   }
   planet.numSpaceships += quantity;
+  console.log(`afterReceive`, planet);
 }
 
 // pseudo code for new production
