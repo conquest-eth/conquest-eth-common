@@ -1,4 +1,4 @@
-import {expect} from 'chai';
+// import {expect} from 'chai';
 import {
   countArrival,
   days,
@@ -223,7 +223,7 @@ describe('peek and send', () => {
       const startTime = planet.lastUpdate;
       peek(planet, days(0.5));
       send(planet, days(0), 34140);
-      const startTime2 = planet.lastUpdate;
+      // const startTime2 = planet.lastUpdate;
       peek(planet, days(0.5));
       countArrival(planet, days(0), 52200, startTime);
       peek(planet, days(0.5));
@@ -256,7 +256,7 @@ describe('peek and send', () => {
       const startTime = planet.lastUpdate;
       peek(planet, days(0.5));
       send(planet, days(0), 34140);
-      const startTime2 = planet.lastUpdate;
+      // const startTime2 = planet.lastUpdate;
       peek(planet, days(0.5));
       countArrival(planet, days(0), 52200, startTime);
       peek(planet, days(0.5));
