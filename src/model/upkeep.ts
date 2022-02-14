@@ -51,7 +51,7 @@ export function peek(planet: FakePlanet, timeDelta: number) {
       planet.numSpaceships = planet.stats.maxUpkeep;
     }
     if (planet.numSpaceships < 0) {
-      planet.numSpaceships = 0;
+      planet.numSpaceships = 0; // TODO SHOULD be planet.stats.maxUpkeep;
     }
   } else {
     if (timeElapsed > 0) {
