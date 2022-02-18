@@ -1,15 +1,7 @@
 // import {Writable, writable} from 'svelte/store';
 import type {PlanetInfo, PlanetState} from '../types';
 import {keccak256} from '@ethersproject/solidity';
-import {
-  LocationPointer,
-  nextInSpiral,
-  areasArroundLocation,
-  StrictLocationPointer,
-  xyToLocation,
-  topleftLocationFromArea,
-  locationToXY,
-} from '../util/location';
+import {LocationPointer, nextInSpiral, StrictLocationPointer, xyToLocation, locationToXY} from '../util/location';
 import {normal16, normal8, value8Mod} from '../util/extraction';
 import {uniqueName} from '../random/uniqueName'; // TODO in common
 import {BigNumber} from '@ethersproject/bignumber';
