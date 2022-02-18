@@ -12,5 +12,5 @@
     "typeRoots": ["./node_modules/@types", "./typings"],
     "outDir": "lib/default"
   },
-  "include": ["./test", "./src/**/*"]
+  "include": ["./test", "./src"]
 }

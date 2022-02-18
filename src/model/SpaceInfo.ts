@@ -14,6 +14,13 @@ import {normal16, normal8, value8Mod} from '../util/extraction';
 import {uniqueName} from '../random/uniqueName'; // TODO in common
 import {BigNumber} from '@ethersproject/bignumber';
 
+function hours(numHours: number): number {
+  return 60 * 60 * numHours;
+}
+function days(n: number): number {
+  return hours(n * 24);
+}
+
 function skip(): Promise<void> {
   return new Promise<void>((resolve) => {
     setTimeout(resolve, 1);
@@ -56,6 +63,7 @@ export class SpaceInfo {
   public readonly productionSpeedUp: number;
   public readonly productionCapAsDuration: number;
   public readonly fleetSizeFactor6: number;
+  public readonly upkeepProductionDecreaseRatePer10000th: number;
 
   // public readonly planetsOnFocus: PlanetInfo[] = [];
   // private lastFocus: {x0: number; y0: number; x1: number; y1: number} = {x0: 0, y0: 0, x1: 0, y1: 0};
@@ -70,6 +78,7 @@ export class SpaceInfo {
     productionSpeedUp: number;
     productionCapAsDuration: number;
     fleetSizeFactor6: number;
+    upkeepProductionDecreaseRatePer10000th: number;
   }) {
     this.resolveWindow = config.resolveWindow;
     this.timePerDistance = Math.floor(config.timePerDistance / 4); // Same as in OuterSpace.sol: the coordinates space is 4 times bigger
@@ -77,6 +86,7 @@ export class SpaceInfo {
     this.acquireNumSpaceships = config.acquireNumSpaceships;
     this.productionSpeedUp = config.productionSpeedUp;
     this.productionCapAsDuration = config.productionCapAsDuration;
+    this.upkeepProductionDecreaseRatePer10000th = config.upkeepProductionDecreaseRatePer10000th;
     this.fleetSizeFactor6 = config.fleetSizeFactor6;
     this.genesis = config.genesisHash;
     // this.store = writable(this.planetsOnFocus);
@@ -331,6 +341,7 @@ export class SpaceInfo {
         natives,
         subX,
         subY,
+        maxTravelingUpkeep: this.acquireNumSpaceships + Math.floor((days(3) * production) / hours(1)),
       },
     };
     // console.log(JSON.stringify(planetObj);
@@ -377,6 +388,7 @@ export class SpaceInfo {
     return this.timeLeft(0, fromPlanet, toPlanet, 0).timeLeft;
   }
 
+  // TODO redo after travelingUpkeep update
   numSpaceshipsAfterDuration(toPlanet: PlanetInfo, toPlanetState: PlanetState, duration: number): number {
     const numSpaceships = toPlanetState.numSpaceships;
 
@@ -423,6 +435,7 @@ export class SpaceInfo {
     return numSpaceshipsAfter;
   }
 
+  // TODO redo after travelingUpkeep update
   numSpaceshipsAtArrival(
     fromPlanet: PlanetInfo,
     toPlanet: PlanetInfo,

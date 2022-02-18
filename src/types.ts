@@ -23,6 +23,7 @@ export type Statistics = {
   natives: number;
   subX: number;
   subY: number;
+  maxTravelingUpkeep: number;
 };
 
 // object representing a planet with only static attributes // do not change
@@ -36,6 +37,8 @@ export type PlanetInfo = {
 export type PlanetState = {
   owner?: string;
   numSpaceships: number;
+  travelingUpkeep: number;
+  overflow: number;
   active: boolean;
   exiting: boolean;
   exitTimeLeft: number;

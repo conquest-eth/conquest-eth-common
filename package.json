@@ -3,9 +3,9 @@
   "description": "common library used by other modules",
   "private": true,
   "version": "0.0.1",
-  "main": "./lib/cjs/index.js",
-  "module": "./lib/esm/index.js",
-  "types": "./lib/esm/index.d.ts",
+  "main": "./lib/cjs/src/index.js",
+  "module": "./lib/esm/src/index.js",
+  "types": "./lib/esm/src/index.d.ts",
   "files": [
     "lib/"
   ],
@@ -34,11 +34,11 @@
   },
   "scripts": {
     "prepare": "node ./.setup.cjs && run-s build",
-    "watch:esm": "tsc -w --preserveWatchOutput -p tsconfig.json",
+    "watch:esm": "tsc -w --preserveWatchOutput -p tsconfig-esm.json",
     "watch:cjs": "tsc -w --preserveWatchOutput -p tsconfig-cjs.json",
     "dev": "run-p watch:esm watch:cjs",
     "test": "mocha",
-    "build": "tsc -p tsconfig.json && tsc -p tsconfig-cjs.json",
+    "build": "tsc -p tsconfig-esm.json && tsc -p tsconfig-cjs.json",
     "lint": "eslint \"**/*.ts\"",
     "lint:fix": "eslint --fix \"**/*.ts\"",
     "format": "prettier --check \"**/*.ts\"",
