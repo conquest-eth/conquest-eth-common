@@ -21,6 +21,8 @@ function days(n: number): number {
   return hours(n * 24);
 }
 
+const ACTIVE_MASK = 2 ** 31;
+
 function skip(): Promise<void> {
   return new Promise<void>((resolve) => {
     setTimeout(resolve, 1);
@@ -388,51 +390,139 @@ export class SpaceInfo {
     return this.timeLeft(0, fromPlanet, toPlanet, 0).timeLeft;
   }
 
-  // TODO redo after travelingUpkeep update
-  numSpaceshipsAfterDuration(toPlanet: PlanetInfo, toPlanetState: PlanetState, duration: number): number {
-    const numSpaceships = toPlanetState.numSpaceships;
+  hasJustExited(exitTime: number, t: number): boolean {
+    return exitTime > 0 && t > exitTime + this.exitDuration;
+  }
 
-    let numSpaceshipsAfter = numSpaceships;
-
-    let maxIncrease = Math.pow(2, 31);
-    if (this.productionCapAsDuration && this.productionCapAsDuration > 0) {
-      let decrease = 0;
-      const cap = Math.floor(
-        this.acquireNumSpaceships + (this.productionCapAsDuration * toPlanet.stats.production) / (60 * 60)
-      );
-      if (numSpaceships > cap) {
-        decrease = duration; // 1 per second
-        if (decrease > numSpaceships - cap) {
-          decrease = numSpaceships - cap;
-        }
-        maxIncrease = 0;
-      } else {
-        maxIncrease = cap - numSpaceships;
+  computePlanetUpdateForTimeElapsed(planetUpdate: PlanetState, planetInfo: PlanetInfo, t: number): void {
+    if (planetUpdate.startExitTime != 0) {
+      if (this.hasJustExited(planetUpdate.startExitTime, t)) {
+        planetUpdate.numSpaceships = 0;
+        planetUpdate.travelingUpkeep = 0;
+        planetUpdate.overflow = 0;
+        planetUpdate.active = false; // event is emitted at the endof each write function
+        planetUpdate.exiting = false;
+        planetUpdate.startExitTime = 0;
+        planetUpdate.exitTimeLeft = 0;
+        planetUpdate.owner = undefined;
+        planetUpdate.rewardGiver = '';
+        // lastUpdated is set at the end directly on storage
+        return;
       }
-
-      if (toPlanetState.active) {
-        let increase = Math.floor((duration * toPlanet.stats.production * this.productionSpeedUp) / (60 * 60));
-        if (increase > maxIncrease) {
-          increase = maxIncrease;
-        }
-        numSpaceshipsAfter += increase;
-      }
-
-      if (decrease > numSpaceshipsAfter) {
-        numSpaceshipsAfter = 0; // not possible
-      } else {
-        numSpaceshipsAfter -= decrease;
-      }
-    } else if (toPlanetState.active) {
-      let increase = Math.floor((duration * toPlanet.stats.production * this.productionSpeedUp) / (60 * 60));
-      if (increase > maxIncrease) {
-        increase = maxIncrease;
-      }
-
-      numSpaceshipsAfter = numSpaceships + increase;
     }
 
-    return numSpaceshipsAfter;
+    const timePassed = t - planetUpdate.lastUpdatedSaved;
+    const production = planetInfo.stats.production;
+    const produce = Math.floor((timePassed * production * this.productionSpeedUp) / hours(1));
+
+    // NOTE: the repaypemnt of upkeep always happen at a fixed rate (per planet), it is fully predictable
+    let upkeepRepaid = 0;
+    if (planetUpdate.travelingUpkeep > 0) {
+      upkeepRepaid = Math.floor((produce * this.upkeepProductionDecreaseRatePer10000th) / 10000);
+      if (upkeepRepaid > planetUpdate.travelingUpkeep) {
+        upkeepRepaid = planetUpdate.travelingUpkeep;
+      }
+      planetUpdate.travelingUpkeep = planetUpdate.travelingUpkeep - upkeepRepaid;
+    }
+
+    let newNumSpaceships = planetUpdate.numSpaceships;
+    let extraUpkeepPaid = 0;
+    if (this.productionCapAsDuration > 0) {
+      // NOTE no need of productionSpeedUp for the cap because _productionCapAsDuration can include it
+      const cap = planetUpdate.active
+        ? Math.floor(this.acquireNumSpaceships + (production * this.productionCapAsDuration) / hours(1))
+        : 0;
+
+      if (newNumSpaceships > cap) {
+        let decreaseRate = 1800;
+        if (planetUpdate.overflow > 0) {
+          decreaseRate = Math.floor((planetUpdate.overflow * 1800) / cap);
+          if (decreaseRate < 1800) {
+            decreaseRate = 1800;
+          }
+        }
+
+        let decrease = Math.floor((timePassed * decreaseRate) / hours(1));
+        if (decrease > newNumSpaceships - cap) {
+          decrease = newNumSpaceships - cap;
+        }
+        if (decrease > newNumSpaceships) {
+          if (planetUpdate.active) {
+            extraUpkeepPaid = produce - upkeepRepaid + newNumSpaceships;
+          }
+          newNumSpaceships = 0;
+        } else {
+          if (planetUpdate.active) {
+            extraUpkeepPaid = produce - upkeepRepaid + decrease;
+          }
+          newNumSpaceships -= decrease;
+        }
+      } else {
+        if (planetUpdate.active) {
+          const maxIncrease = cap - newNumSpaceships;
+          let increase = produce - upkeepRepaid;
+          if (increase > maxIncrease) {
+            extraUpkeepPaid = increase - maxIncrease;
+            increase = maxIncrease;
+          }
+          newNumSpaceships += increase;
+        } else {
+          // not effect currently, when inactive, cap == 0, meaning zero spaceship here
+          // NOTE: we could do the following assuming we act on upkeepRepaid when inactive, we do not do that currently
+          //  extraUpkeepPaid = produce - upkeepRepaid;
+        }
+      }
+
+      if (planetUpdate.active) {
+        // travelingUpkeep can go negative allow you to charge up your planet for later use, up to 7 days
+        let newTravelingUpkeep = planetUpdate.travelingUpkeep - extraUpkeepPaid;
+        if (newTravelingUpkeep < -Math.floor((days(3) * production) / hours(1))) {
+          newTravelingUpkeep = -Math.floor((days(3) * production) / hours(1));
+        }
+        planetUpdate.travelingUpkeep = newTravelingUpkeep;
+      }
+    } else {
+      if (planetUpdate.active) {
+        newNumSpaceships += Math.floor((timePassed * production * this.productionSpeedUp) / hours(1)) - upkeepRepaid;
+      } else {
+        // NOTE no need to overflow here  as there is no production cap, so no incentive to regroup spaceships
+        let decrease = Math.floor((timePassed * 1800) / hours(1));
+        if (decrease > newNumSpaceships) {
+          decrease = newNumSpaceships;
+          newNumSpaceships = 0;
+        } else {
+          newNumSpaceships -= decrease;
+        }
+      }
+    }
+
+    if (newNumSpaceships >= ACTIVE_MASK) {
+      newNumSpaceships = ACTIVE_MASK - 1;
+    }
+    planetUpdate.numSpaceships = newNumSpaceships;
+  }
+
+  numSpaceshipsAfterDuration(toPlanet: PlanetInfo, toPlanetState: PlanetState, duration: number): number {
+    const newPlanetState = {
+      owner: toPlanetState.owner,
+      lastUpdatedSaved: toPlanetState.lastUpdatedSaved,
+      startExitTime: toPlanetState.startExitTime,
+      numSpaceships: toPlanetState.numSpaceships,
+      travelingUpkeep: toPlanetState.travelingUpkeep,
+      overflow: toPlanetState.overflow,
+      active: toPlanetState.active,
+      exiting: toPlanetState.exiting,
+      exitTimeLeft: toPlanetState.exitTimeLeft,
+      natives: toPlanetState.natives,
+      capturing: toPlanetState.capturing,
+      inReach: toPlanetState.inReach,
+      rewardGiver: toPlanetState.rewardGiver,
+      requireClaimAcknowledgement: toPlanetState.requireClaimAcknowledgement,
+    };
+
+    this.computePlanetUpdateForTimeElapsed(newPlanetState, toPlanet, newPlanetState.lastUpdatedSaved + duration);
+
+    return newPlanetState.numSpaceships;
   }
 
   // TODO redo after travelingUpkeep update
@@ -443,85 +533,9 @@ export class SpaceInfo {
     timeTraveled = 0
   ): {min: number; max: number} {
     const duration = this.timeToArrive(fromPlanet, toPlanet) - timeTraveled;
-    // TODO extract
-    const numSpaceships = toPlanetState.numSpaceships;
-
-    let minScenario = numSpaceships;
-    let maxScenario = numSpaceships;
-    let maxIncrease = Math.pow(2, 31);
-    if (this.productionCapAsDuration && this.productionCapAsDuration > 0) {
-      let decreaseForMaxScenario = 0;
-      let decreaseForMinScenario = 0;
-      const cap = Math.floor(
-        this.acquireNumSpaceships + (this.productionCapAsDuration * toPlanet.stats.production) / (60 * 60)
-      );
-      if (numSpaceships > cap) {
-        decreaseForMinScenario = duration; // 1 per second
-        if (decreaseForMinScenario > numSpaceships - cap) {
-          decreaseForMinScenario = numSpaceships - cap;
-        }
-        decreaseForMaxScenario = duration + this.resolveWindow; // 1 per second
-        if (decreaseForMaxScenario > numSpaceships - cap) {
-          decreaseForMaxScenario = numSpaceships - cap;
-        }
-        maxIncrease = 0;
-      } else {
-        maxIncrease = cap - numSpaceships;
-      }
-
-      if (toPlanetState.active) {
-        let increaseForMinScenario = Math.floor(
-          (duration * toPlanet.stats.production * this.productionSpeedUp) / (60 * 60)
-        );
-        if (increaseForMinScenario > maxIncrease) {
-          increaseForMinScenario = maxIncrease;
-        }
-        minScenario += increaseForMinScenario;
-      }
-
-      if (decreaseForMinScenario > minScenario) {
-        minScenario = 0; // not possible
-      } else {
-        minScenario -= decreaseForMinScenario;
-      }
-
-      if (toPlanetState.active) {
-        let increaseForMaxScenario = Math.floor(
-          ((duration + this.resolveWindow) * toPlanet.stats.production * this.productionSpeedUp) / (60 * 60)
-        );
-        if (increaseForMaxScenario > maxIncrease) {
-          increaseForMaxScenario = maxIncrease;
-        }
-        maxScenario += increaseForMaxScenario;
-      }
-      if (decreaseForMaxScenario > maxScenario) {
-        maxScenario = 0; // not possible
-      } else {
-        maxScenario -= decreaseForMaxScenario;
-      }
-    } else if (toPlanetState.active) {
-      let increaseForMinScenario = Math.floor(
-        (duration * toPlanet.stats.production * this.productionSpeedUp) / (60 * 60)
-      );
-      if (increaseForMinScenario > maxIncrease) {
-        increaseForMinScenario = maxIncrease;
-      }
-
-      minScenario = numSpaceships + increaseForMinScenario;
-
-      let increaseForMaxScenario = Math.floor(
-        ((duration + this.resolveWindow) * toPlanet.stats.production * this.productionSpeedUp) / (60 * 60)
-      );
-      if (increaseForMaxScenario > maxIncrease) {
-        increaseForMaxScenario = maxIncrease;
-      }
-
-      maxScenario = numSpaceships + increaseForMaxScenario;
-    }
-
     return {
-      min: minScenario,
-      max: maxScenario,
+      min: this.numSpaceshipsAfterDuration(toPlanet, toPlanetState, duration),
+      max: this.numSpaceshipsAfterDuration(toPlanet, toPlanetState, duration + this.resolveWindow),
     };
   }
 

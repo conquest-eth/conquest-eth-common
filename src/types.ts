@@ -36,6 +36,8 @@ export type PlanetInfo = {
 // object representing the state of the planet // change over time and through actions
 export type PlanetState = {
   owner?: string;
+  lastUpdatedSaved: number; // updated
+  startExitTime: number;
   numSpaceships: number;
   travelingUpkeep: number;
   overflow: number;
