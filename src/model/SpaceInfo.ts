@@ -335,7 +335,9 @@ export class SpaceInfo {
         natives,
         subX,
         subY,
-        maxTravelingUpkeep: this.acquireNumSpaceships + Math.floor((days(3) * production) / hours(1)),
+        maxTravelingUpkeep: Math.floor(
+          this.acquireNumSpaceships + (production * this.productionCapAsDuration) / hours(1)
+        ),
       },
     };
     // console.log(JSON.stringify(planetObj);
@@ -468,8 +470,8 @@ export class SpaceInfo {
       if (planetUpdate.active) {
         // travelingUpkeep can go negative allow you to charge up your planet for later use, up to 7 days
         let newTravelingUpkeep = planetUpdate.travelingUpkeep - extraUpkeepPaid;
-        if (newTravelingUpkeep < -Math.floor((days(3) * production) / hours(1))) {
-          newTravelingUpkeep = -Math.floor((days(3) * production) / hours(1));
+        if (newTravelingUpkeep < -cap) {
+          newTravelingUpkeep = -cap;
         }
         planetUpdate.travelingUpkeep = newTravelingUpkeep;
       }
