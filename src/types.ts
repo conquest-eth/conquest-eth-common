@@ -23,6 +23,7 @@ export type Statistics = {
   natives: number;
   subX: number;
   subY: number;
+  cap: number;
   maxTravelingUpkeep: number;
 };
 
@@ -49,4 +50,5 @@ export type PlanetState = {
   inReach: boolean;
   rewardGiver: string;
   requireClaimAcknowledgement?: string;
+  metadata: Record<string, string | number | boolean>;
 };

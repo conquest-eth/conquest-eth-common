@@ -338,6 +338,7 @@ export class SpaceInfo {
         maxTravelingUpkeep: Math.floor(
           this.acquireNumSpaceships + (production * this.productionCapAsDuration) / hours(1)
         ),
+        cap: Math.floor(this.acquireNumSpaceships + (production * this.productionCapAsDuration) / hours(1)),
       },
     };
     // console.log(JSON.stringify(planetObj);
@@ -512,6 +513,7 @@ export class SpaceInfo {
       inReach: toPlanetState.inReach,
       rewardGiver: toPlanetState.rewardGiver,
       requireClaimAcknowledgement: toPlanetState.requireClaimAcknowledgement,
+      metadata: toPlanetState.metadata,
     };
 
     this.computePlanetUpdateForTimeElapsed(newPlanetState, toPlanet, newPlanetState.lastUpdatedSaved + duration);
@@ -541,6 +543,7 @@ export class SpaceInfo {
     fleetAmount: number,
     fleetLaunchTime: number,
     timeTraveled: number,
+    senderPlayer?: Player,
     fromPlayer?: Player,
     toPlayer?: Player,
     gift?: boolean,
@@ -549,6 +552,7 @@ export class SpaceInfo {
     min: {captured: boolean; numSpaceshipsLeft: number};
     max: {captured: boolean; numSpaceshipsLeft: number};
     allies: boolean;
+    taxAllies: boolean;
     giving?: {tax: number; loss: number};
     timeUntilFails: number;
   } {
@@ -559,7 +563,7 @@ export class SpaceInfo {
 
     let allies = false;
     if (toPlayer) {
-      if (toPlayer.address === fromPlayer?.address) {
+      if (toPlayer.address.toLowerCase() === fromPlayer?.address.toLowerCase()) {
         allies = true;
       } else if (fromPlayer) {
         if (toPlayer.alliances.length > 0 && fromPlayer.alliances.length > 0) {
@@ -570,6 +574,26 @@ export class SpaceInfo {
           console.log({potentialAlliances});
           if (potentialAlliances.length > 0) {
             allies = true;
+          }
+        }
+      }
+    }
+
+    let taxAllies = allies;
+
+    if (senderPlayer && toPlayer && fromPlayer && fromPlayer.address !== senderPlayer?.address) {
+      taxAllies = false;
+      if (toPlayer.address.toLowerCase() === senderPlayer?.address.toLowerCase()) {
+        taxAllies = true;
+      } else if (senderPlayer) {
+        if (toPlayer.alliances.length > 0 && senderPlayer.alliances.length > 0) {
+          const potentialAlliances = findCommonAlliances(
+            toPlayer.alliances.map((v) => v.address),
+            senderPlayer.alliances.map((v) => v.address)
+          );
+          console.log({potentialAlliances});
+          if (potentialAlliances.length > 0) {
+            taxAllies = true;
           }
         }
       }
@@ -594,7 +618,7 @@ export class SpaceInfo {
     if (actualGift) {
       // TODO specific
       let loss = 0;
-      if (!allies) {
+      if (!taxAllies) {
         loss = numAttack.mul(GIFT_TAX_PER_10000).div(10000).toNumber();
         numAttack = numAttack.sub(loss);
       }
@@ -609,6 +633,7 @@ export class SpaceInfo {
         },
         timeUntilFails: 0,
         allies,
+        taxAllies,
         giving: {
           tax: GIFT_TAX_PER_10000,
           loss,
@@ -627,6 +652,7 @@ export class SpaceInfo {
           numSpaceshipsLeft: numDefenseMax.toNumber(),
         },
         allies,
+        taxAllies,
         timeUntilFails: 0,
       };
     }
@@ -643,6 +669,7 @@ export class SpaceInfo {
           numSpaceshipsLeft: numAttack.toNumber(),
         },
         allies,
+        taxAllies,
         timeUntilFails: 0,
       };
     }
@@ -689,7 +716,7 @@ export class SpaceInfo {
       }
     }
 
-    return {min: minOutcome, max: maxOutcome, allies, timeUntilFails};
+    return {min: minOutcome, max: maxOutcome, allies, taxAllies, timeUntilFails};
   }
 
   combat(
