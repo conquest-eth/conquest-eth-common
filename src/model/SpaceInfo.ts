@@ -497,6 +497,10 @@ export class SpaceInfo {
       newNumSpaceships = ACTIVE_MASK - 1;
     }
     planetUpdate.numSpaceships = newNumSpaceships;
+    planetUpdate.natives = planetUpdate.numSpaceships == 0 && !planetUpdate.active;
+    if (planetUpdate.natives) {
+      planetUpdate.owner = undefined;
+    }
   }
 
   numSpaceshipsAfterDuration(toPlanet: PlanetInfo, toPlanetState: PlanetState, duration: number): number {
@@ -520,7 +524,11 @@ export class SpaceInfo {
 
     this.computePlanetUpdateForTimeElapsed(newPlanetState, toPlanet, newPlanetState.lastUpdatedSaved + duration);
 
-    return newPlanetState.numSpaceships;
+    if (newPlanetState.natives) {
+      return toPlanet.stats.natives;
+    } else {
+      return newPlanetState.numSpaceships;
+    }
   }
 
   // TODO redo after travelingUpkeep update
