@@ -776,7 +776,7 @@ export class SpaceInfo {
     success: boolean;
     numSpaceshipsLeft: number;
   } {
-    console.log(planetState.owner, from);
+    // console.log(planetState.owner, from);
     if (planetState.owner && planetState.owner?.toLowerCase() === from?.toLowerCase()) {
       return {
         success: true,
