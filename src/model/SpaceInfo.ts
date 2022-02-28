@@ -538,6 +538,7 @@ export class SpaceInfo {
     toPlanetState: PlanetState,
     timeTraveled = 0
   ): {min: number; max: number} {
+    // console.log({timeTraveled});
     const duration = this.timeToArrive(fromPlanet, toPlanet) - timeTraveled;
     return {
       min: this.numSpaceshipsAfterDuration(toPlanet, toPlanetState, duration),
