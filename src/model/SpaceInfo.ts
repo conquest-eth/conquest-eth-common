@@ -568,9 +568,33 @@ export class SpaceInfo {
     timeUntilFails: number;
   } {
     const {min, max} = this.numSpaceshipsAtArrival(fromPlanet, toPlanet, toPlanetState, timeTraveled);
-    const numDefenseMin = BigNumber.from(min);
-    const numDefenseMax = BigNumber.from(max);
-    let numAttack = BigNumber.from(fleetAmount);
+
+    let numDefenseMin: BigNumber;
+    try {
+      numDefenseMin = BigNumber.from(min);
+    } catch (e) {
+      numDefenseMin = BigNumber.from(0);
+      console.error(`min is not a number`);
+      console.error(e);
+    }
+
+    let numDefenseMax: BigNumber;
+    try {
+      numDefenseMax = BigNumber.from(max);
+    } catch (e) {
+      numDefenseMax = BigNumber.from(0);
+      console.error(`max is not a number`);
+      console.error(e);
+    }
+
+    let numAttack: BigNumber;
+    try {
+      numAttack = BigNumber.from(fleetAmount);
+    } catch (e) {
+      numAttack = BigNumber.from(0);
+      console.error(`fleetAmount is not a number`);
+      console.error(e);
+    }
 
     let allies = false;
     if (toPlayer) {
