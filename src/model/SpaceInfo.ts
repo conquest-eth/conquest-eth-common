@@ -408,7 +408,7 @@ export class SpaceInfo {
 
     const timePassed = t - planetUpdate.lastUpdatedSaved;
     const production = planetInfo.stats.production;
-    const produce = Math.floor((timePassed * production * this.productionSpeedUp) / hours(1));
+    const produce = Math.floor((timePassed * this.productionSpeedUp * production) / hours(1));
 
     // NOTE: the repaypemnt of upkeep always happen at a fixed rate (per planet), it is fully predictable
     let upkeepRepaid = 0;
@@ -439,7 +439,7 @@ export class SpaceInfo {
             }
           }
 
-          let decrease = Math.floor((timePassed * decreaseRate) / hours(1));
+          let decrease = Math.floor((timePassed * this.productionSpeedUp * decreaseRate) / hours(1));
           if (decrease > newNumSpaceships - cap) {
             decrease = newNumSpaceships - cap;
           }
@@ -481,10 +481,10 @@ export class SpaceInfo {
       }
     } else {
       if (planetUpdate.active) {
-        newNumSpaceships += Math.floor((timePassed * production * this.productionSpeedUp) / hours(1)) - upkeepRepaid;
+        newNumSpaceships += Math.floor((timePassed * this.productionSpeedUp * production) / hours(1)) - upkeepRepaid;
       } else {
         // NOTE no need to overflow here  as there is no production cap, so no incentive to regroup spaceships
-        let decrease = Math.floor((timePassed * 1800) / hours(1));
+        let decrease = Math.floor((timePassed * this.productionSpeedUp * 1800) / hours(1));
         if (decrease > newNumSpaceships) {
           decrease = newNumSpaceships;
           newNumSpaceships = 0;
@@ -575,6 +575,17 @@ export class SpaceInfo {
       numDefenseMin = BigNumber.from(min);
     } catch (e) {
       numDefenseMin = BigNumber.from(0);
+      (window as any).generateError(
+        JSON.stringify(
+          {
+            min,
+            timeTraveled,
+            toPlanetState,
+          },
+          null,
+          2
+        )
+      );
       console.error(`min is not a number`);
       console.error(e);
     }
@@ -584,18 +595,22 @@ export class SpaceInfo {
       numDefenseMax = BigNumber.from(max);
     } catch (e) {
       numDefenseMax = BigNumber.from(0);
+      (window as any).generateError(
+        JSON.stringify(
+          {
+            max,
+            timeTraveled,
+            toPlanetState,
+          },
+          null,
+          2
+        )
+      );
       console.error(`max is not a number`);
       console.error(e);
     }
 
-    let numAttack: BigNumber;
-    try {
-      numAttack = BigNumber.from(fleetAmount);
-    } catch (e) {
-      numAttack = BigNumber.from(0);
-      console.error(`fleetAmount is not a number`);
-      console.error(e);
-    }
+    let numAttack = BigNumber.from(fleetAmount);
 
     let allies = false;
     if (toPlayer) {
