@@ -424,15 +424,16 @@ export class SpaceInfo {
     let extraUpkeepPaid = 0;
     if (this.productionCapAsDuration > 0) {
       // NOTE no need of productionSpeedUp for the cap because _productionCapAsDuration can include it
-      const cap = planetUpdate.active
-        ? Math.floor(this.acquireNumSpaceships + (production * this.productionCapAsDuration) / hours(1))
-        : 0;
+      const capWhenActive = Math.floor(
+        this.acquireNumSpaceships + (production * this.productionCapAsDuration) / hours(1)
+      );
+      const cap = planetUpdate.active ? capWhenActive : 0;
 
       if (newNumSpaceships > cap) {
         if (planetUpdate.startExitTime == 0) {
           let decreaseRate = 1800;
           if (planetUpdate.overflow > 0) {
-            decreaseRate = Math.floor((planetUpdate.overflow * 1800) / cap);
+            decreaseRate = Math.floor((planetUpdate.overflow * 1800) / capWhenActive);
             if (decreaseRate < 1800) {
               decreaseRate = 1800;
             }
