@@ -21,8 +21,6 @@ function skip(): Promise<void> {
   });
 }
 
-const GIFT_TAX_PER_10000 = 2500; // TODO linkedData from contract
-
 // TODO remove duplicate in playersQuery
 type Player = {
   address: string;
@@ -58,6 +56,7 @@ export class SpaceInfo {
   public readonly productionCapAsDuration: number;
   public readonly fleetSizeFactor6: number;
   public readonly upkeepProductionDecreaseRatePer10000th: number;
+  public readonly giftTaxPer10000: number;
 
   // public readonly planetsOnFocus: PlanetInfo[] = [];
   // private lastFocus: {x0: number; y0: number; x1: number; y1: number} = {x0: 0, y0: 0, x1: 0, y1: 0};
@@ -73,6 +72,7 @@ export class SpaceInfo {
     productionCapAsDuration: number;
     fleetSizeFactor6: number;
     upkeepProductionDecreaseRatePer10000th: number;
+    giftTaxPer10000: number;
   }) {
     this.resolveWindow = config.resolveWindow;
     this.timePerDistance = Math.floor(config.timePerDistance / 4); // Same as in OuterSpace.sol: the coordinates space is 4 times bigger
@@ -83,6 +83,7 @@ export class SpaceInfo {
     this.upkeepProductionDecreaseRatePer10000th = config.upkeepProductionDecreaseRatePer10000th;
     this.fleetSizeFactor6 = config.fleetSizeFactor6;
     this.genesis = config.genesisHash;
+    this.giftTaxPer10000 = config.giftTaxPer10000;
     // this.store = writable(this.planetsOnFocus);
   }
 
@@ -670,7 +671,7 @@ export class SpaceInfo {
       // TODO specific
       let loss = 0;
       if (!taxAllies) {
-        loss = numAttack.mul(GIFT_TAX_PER_10000).div(10000).toNumber();
+        loss = numAttack.mul(this.giftTaxPer10000).div(10000).toNumber();
         numAttack = numAttack.sub(loss);
       }
       return {
@@ -686,7 +687,7 @@ export class SpaceInfo {
         allies,
         taxAllies,
         giving: {
-          tax: GIFT_TAX_PER_10000,
+          tax: this.giftTaxPer10000,
           loss,
         },
       };
