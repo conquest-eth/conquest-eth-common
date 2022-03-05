@@ -407,6 +407,11 @@ export class SpaceInfo {
       }
     }
 
+    if (planetUpdate.natives) {
+      // this is to calculate properly as natives is not numSpaceships in contract state
+      planetUpdate.numSpaceships = 0;
+    }
+
     const timePassed = t - planetUpdate.lastUpdatedSaved;
     const production = planetInfo.stats.production;
     const produce = Math.floor((timePassed * this.productionSpeedUp * production) / hours(1));
