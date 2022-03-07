@@ -511,32 +511,51 @@ export class SpaceInfo {
     }
   }
 
-  numSpaceshipsAfterDuration(toPlanet: PlanetInfo, toPlanetState: PlanetState, duration: number): number {
+  computeFuturePlanetState(planetInfo: PlanetInfo, currentPlanetState: PlanetState, duration: number): PlanetState {
     const newPlanetState = {
-      owner: toPlanetState.owner,
-      lastUpdatedSaved: toPlanetState.lastUpdatedSaved,
-      startExitTime: toPlanetState.startExitTime,
-      numSpaceships: toPlanetState.numSpaceships,
-      travelingUpkeep: toPlanetState.travelingUpkeep,
-      overflow: toPlanetState.overflow,
-      active: toPlanetState.active,
-      exiting: toPlanetState.exiting,
-      exitTimeLeft: toPlanetState.exitTimeLeft,
-      natives: toPlanetState.natives,
-      capturing: toPlanetState.capturing,
-      inReach: toPlanetState.inReach,
-      rewardGiver: toPlanetState.rewardGiver,
-      requireClaimAcknowledgement: toPlanetState.requireClaimAcknowledgement,
-      metadata: toPlanetState.metadata,
+      owner: currentPlanetState.owner,
+      lastUpdatedSaved: currentPlanetState.lastUpdatedSaved,
+      startExitTime: currentPlanetState.startExitTime,
+      numSpaceships: currentPlanetState.numSpaceships,
+      travelingUpkeep: currentPlanetState.travelingUpkeep,
+      overflow: currentPlanetState.overflow,
+      active: currentPlanetState.active,
+      exiting: currentPlanetState.exiting,
+      exitTimeLeft: currentPlanetState.exitTimeLeft,
+      natives: currentPlanetState.natives,
+      capturing: currentPlanetState.capturing,
+      inReach: currentPlanetState.inReach,
+      rewardGiver: currentPlanetState.rewardGiver,
+      requireClaimAcknowledgement: currentPlanetState.requireClaimAcknowledgement,
+      metadata: currentPlanetState.metadata,
     };
 
-    this.computePlanetUpdateForTimeElapsed(newPlanetState, toPlanet, newPlanetState.lastUpdatedSaved + duration);
+    this.computePlanetUpdateForTimeElapsed(newPlanetState, planetInfo, newPlanetState.lastUpdatedSaved + duration);
+
+    return newPlanetState;
+  }
+
+  numSpaceshipsAfterDuration(toPlanet: PlanetInfo, toPlanetState: PlanetState, duration: number): number {
+    const newPlanetState = this.computeFuturePlanetState(toPlanet, toPlanetState, duration);
 
     if (newPlanetState.natives) {
       return toPlanet.stats.natives;
     } else {
       return newPlanetState.numSpaceships;
     }
+  }
+
+  computePlanetStatesAtArrival(
+    fromPlanet: PlanetInfo,
+    toPlanet: PlanetInfo,
+    toPlanetState: PlanetState,
+    timeTraveled = 0
+  ): {minPlanetState: PlanetState; maxPlanetState: PlanetState} {
+    const duration = this.timeToArrive(fromPlanet, toPlanet) - timeTraveled;
+    return {
+      minPlanetState: this.computeFuturePlanetState(toPlanet, toPlanetState, duration),
+      maxPlanetState: this.computeFuturePlanetState(toPlanet, toPlanetState, duration + this.resolveWindow),
+    };
   }
 
   // TODO redo after travelingUpkeep update
@@ -574,8 +593,25 @@ export class SpaceInfo {
     taxAllies: boolean;
     giving?: {tax: number; loss: number};
     timeUntilFails: number;
+    nativeResist: boolean;
   } {
-    const {min, max} = this.numSpaceshipsAtArrival(fromPlanet, toPlanet, toPlanetState, timeTraveled);
+    // const {min, max} = this.numSpaceshipsAtArrival(fromPlanet, toPlanet, toPlanetState, timeTraveled);
+    const {minPlanetState, maxPlanetState} = this.computePlanetStatesAtArrival(
+      fromPlanet,
+      toPlanet,
+      toPlanetState,
+      timeTraveled
+    );
+
+    let min = minPlanetState.numSpaceships;
+    if (minPlanetState.natives) {
+      min = toPlanet.stats.natives;
+    }
+
+    let max = maxPlanetState.numSpaceships;
+    if (maxPlanetState.natives) {
+      max = toPlanet.stats.natives;
+    }
 
     let numDefenseMin: BigNumber;
     try {
@@ -696,6 +732,7 @@ export class SpaceInfo {
           tax: this.giftTaxPer10000,
           loss,
         },
+        nativeResist: minPlanetState.natives,
       };
     }
 
@@ -712,25 +749,44 @@ export class SpaceInfo {
         allies,
         taxAllies,
         timeUntilFails: 0,
+        nativeResist: minPlanetState.natives,
       };
     }
 
-    // TODO if only: numDefenseMin.eq(0)
-    if (numDefenseMax.eq(0)) {
-      return {
-        min: {
-          captured: true,
-          numSpaceshipsLeft: numAttack.toNumber(),
-        },
-        max: {
-          captured: true,
-          numSpaceshipsLeft: numAttack.toNumber(),
-        },
-        allies,
-        taxAllies,
-        timeUntilFails: 0,
-      };
-    }
+    // TODO investigate : can we delete these :
+
+    // // TODO if only: numDefenseMin.eq(0)
+    // if (numDefenseMin.eq(0)) {
+    //   return {
+    //     min: {
+    //       captured: true,
+    //       numSpaceshipsLeft: numAttack.toNumber(),
+    //     },
+    //     max: {
+    //       captured: true,
+    //       numSpaceshipsLeft: numAttack.toNumber(),
+    //     },
+    //     allies,
+    //     taxAllies,
+    //     timeUntilFails: 0,
+    //   };
+    // }
+
+    // if (numDefenseMax.eq(0)) {
+    //   return {
+    //     min: {
+    //       captured: true,
+    //       numSpaceshipsLeft: numAttack.toNumber(),
+    //     },
+    //     max: {
+    //       captured: true,
+    //       numSpaceshipsLeft: numAttack.toNumber(),
+    //     },
+    //     allies,
+    //     taxAllies,
+    //     timeUntilFails: 0,
+    //   };
+    // }
 
     const minOutcome = {
       captured: false,
@@ -765,6 +821,7 @@ export class SpaceInfo {
 
     let timeUntilFails = 0;
     if (minOutcome.captured) {
+      // TODO consider upkeep and production reduction
       const production = numDefenseMax.sub(numDefenseMin).mul(1000000).div(this.resolveWindow);
       if (production.gt(0)) {
         timeUntilFails = resultMin.attackDamage.sub(numDefenseMin).mul(1000000).div(production).toNumber();
@@ -774,7 +831,16 @@ export class SpaceInfo {
       }
     }
 
-    return {min: minOutcome, max: maxOutcome, allies, taxAllies, timeUntilFails};
+    // TODO numDefenseMax = 0 due to exit => natives
+
+    return {
+      min: minOutcome,
+      max: maxOutcome,
+      allies,
+      taxAllies,
+      timeUntilFails,
+      nativeResist: !minOutcome.captured && minPlanetState.natives,
+    };
   }
 
   combat(
