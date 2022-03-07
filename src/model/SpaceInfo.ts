@@ -402,6 +402,7 @@ export class SpaceInfo {
         planetUpdate.exitTimeLeft = 0;
         planetUpdate.owner = undefined;
         planetUpdate.rewardGiver = '';
+        planetUpdate.natives = true;
         // lastUpdated is set at the end directly on storage
         return;
       }
