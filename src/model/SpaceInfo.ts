@@ -434,7 +434,7 @@ export class SpaceInfo {
       const capWhenActive = Math.floor(
         this.acquireNumSpaceships + (production * this.productionCapAsDuration) / hours(1)
       );
-      const cap = planetUpdate.active ? capWhenActive : 0;
+      const cap = planetUpdate.active ? capWhenActive : planetInfo.stats.natives;
 
       if (newNumSpaceships > cap) {
         if (planetUpdate.startExitTime == 0) {
