@@ -603,13 +603,19 @@ export class SpaceInfo {
       timeTraveled
     );
 
+    let nativeResistIfAttackFails = minPlanetState.natives;
     let min = minPlanetState.numSpaceships;
     if (minPlanetState.natives) {
       min = toPlanet.stats.natives;
+    } else if (!minPlanetState.active && min < toPlanet.stats.natives) {
+      min = toPlanet.stats.natives;
+      nativeResistIfAttackFails = true;
     }
 
     let max = maxPlanetState.numSpaceships;
     if (maxPlanetState.natives) {
+      max = toPlanet.stats.natives;
+    } else if (!maxPlanetState.active && min < toPlanet.stats.natives) {
       max = toPlanet.stats.natives;
     }
 
@@ -732,7 +738,7 @@ export class SpaceInfo {
           tax: this.giftTaxPer10000,
           loss,
         },
-        nativeResist: minPlanetState.natives,
+        nativeResist: nativeResistIfAttackFails,
       };
     }
 
@@ -749,7 +755,7 @@ export class SpaceInfo {
         allies,
         taxAllies,
         timeUntilFails: 0,
-        nativeResist: minPlanetState.natives,
+        nativeResist: nativeResistIfAttackFails,
       };
     }
 
@@ -799,6 +805,7 @@ export class SpaceInfo {
 
     const resultMin = this.combat(fromPlanet.stats.attack, numAttack, toPlanet.stats.defense, numDefenseMin);
     if (resultMin.attackerLoss.eq(numAttack)) {
+      // TODO check numDefense winning on zeroes in smart contract
       minOutcome.captured = false;
       minOutcome.numSpaceshipsLeft = toPlanetState.natives
         ? toPlanet.stats.natives
@@ -839,7 +846,7 @@ export class SpaceInfo {
       allies,
       taxAllies,
       timeUntilFails,
-      nativeResist: !minOutcome.captured && minPlanetState.natives,
+      nativeResist: !minOutcome.captured && nativeResistIfAttackFails,
     };
   }
 
