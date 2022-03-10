@@ -42,6 +42,21 @@ function findCommonAlliances(arr1: string[], arr2: string[]): string[] {
 //   -readonly [k in keyof T]: T[k];
 // };
 
+export type Outcome = {
+  min: {captured: boolean; numSpaceshipsLeft: number};
+  max: {captured: boolean; numSpaceshipsLeft: number};
+  allies: boolean;
+  taxAllies: boolean;
+  tax?: {taxRate: number; loss: number};
+  gift: boolean;
+  timeUntilFails: number;
+  nativeResist: boolean;
+  combat?: {
+    defenderLoss: number;
+    attackerLoss: number;
+  };
+};
+
 export class SpaceInfo {
   private readonly genesis: string;
   private readonly cache: {[id: string]: PlanetInfo | null} = {};
@@ -586,15 +601,7 @@ export class SpaceInfo {
     toPlayer?: Player,
     gift?: boolean,
     specific?: string
-  ): {
-    min: {captured: boolean; numSpaceshipsLeft: number};
-    max: {captured: boolean; numSpaceshipsLeft: number};
-    allies: boolean;
-    taxAllies: boolean;
-    giving?: {tax: number; loss: number};
-    timeUntilFails: number;
-    nativeResist: boolean;
-  } {
+  ): Outcome {
     // const {min, max} = this.numSpaceshipsAtArrival(fromPlanet, toPlanet, toPlanetState, timeTraveled);
     const {minPlanetState, maxPlanetState} = this.computePlanetStatesAtArrival(
       fromPlanet,
@@ -734,8 +741,9 @@ export class SpaceInfo {
         timeUntilFails: 0,
         allies,
         taxAllies,
-        giving: {
-          tax: this.giftTaxPer10000,
+        gift: true,
+        tax: {
+          taxRate: this.giftTaxPer10000,
           loss,
         },
         nativeResist: nativeResistIfAttackFails,
@@ -752,47 +760,38 @@ export class SpaceInfo {
           captured: false,
           numSpaceshipsLeft: numDefenseMax.toNumber(),
         },
+        gift: false,
         allies,
         taxAllies,
         timeUntilFails: 0,
         nativeResist: nativeResistIfAttackFails,
+        combat: {
+          defenderLoss: 0,
+          attackerLoss: 0,
+        },
       };
     }
 
-    // TODO investigate : can we delete these :
+    let fleetOwnerTax = false;
+    if (senderPlayer && fromPlayer && senderPlayer?.address !== fromPlayer?.address) {
+      if (fromPlayer.alliances.length > 0 && senderPlayer.alliances.length > 0) {
+        const potentialAlliances = findCommonAlliances(
+          fromPlayer.alliances.map((v) => v.address),
+          senderPlayer.alliances.map((v) => v.address)
+        );
+        if (potentialAlliances.length == 0) {
+          fleetOwnerTax = true;
+        }
+      } else {
+        fleetOwnerTax = true;
+      }
+    }
 
-    // // TODO if only: numDefenseMin.eq(0)
-    // if (numDefenseMin.eq(0)) {
-    //   return {
-    //     min: {
-    //       captured: true,
-    //       numSpaceshipsLeft: numAttack.toNumber(),
-    //     },
-    //     max: {
-    //       captured: true,
-    //       numSpaceshipsLeft: numAttack.toNumber(),
-    //     },
-    //     allies,
-    //     taxAllies,
-    //     timeUntilFails: 0,
-    //   };
-    // }
-
-    // if (numDefenseMax.eq(0)) {
-    //   return {
-    //     min: {
-    //       captured: true,
-    //       numSpaceshipsLeft: numAttack.toNumber(),
-    //     },
-    //     max: {
-    //       captured: true,
-    //       numSpaceshipsLeft: numAttack.toNumber(),
-    //     },
-    //     allies,
-    //     taxAllies,
-    //     timeUntilFails: 0,
-    //   };
-    // }
+    let loss = 0;
+    if (fleetOwnerTax) {
+      loss = numAttack.mul(this.giftTaxPer10000).div(10000).toNumber();
+      numAttack = numAttack.sub(loss);
+    }
 
     const minOutcome = {
       captured: false,
@@ -846,7 +845,19 @@ export class SpaceInfo {
       allies,
       taxAllies,
       timeUntilFails,
+      gift: false,
+      tax:
+        loss > 0
+          ? {
+              taxRate: this.giftTaxPer10000,
+              loss,
+            }
+          : undefined,
       nativeResist: !minOutcome.captured && nativeResistIfAttackFails,
+      combat: {
+        defenderLoss: resultMin.defenderLoss.toNumber(),
+        attackerLoss: resultMin.attackerLoss.toNumber(),
+      },
     };
   }
 
