@@ -678,7 +678,7 @@ export class SpaceInfo {
             toPlayer.alliances.map((v) => v.address),
             fromPlayer.alliances.map((v) => v.address)
           );
-          console.log({potentialAlliances});
+          // console.log({potentialAlliances});
           if (potentialAlliances.length > 0) {
             allies = true;
           }
@@ -698,7 +698,7 @@ export class SpaceInfo {
             toPlayer.alliances.map((v) => v.address),
             senderPlayer.alliances.map((v) => v.address)
           );
-          console.log({potentialAlliances});
+          // console.log({potentialAlliances});
           if (potentialAlliances.length > 0) {
             taxAllies = true;
           }
