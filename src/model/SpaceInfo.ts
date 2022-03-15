@@ -561,41 +561,39 @@ export class SpaceInfo {
   }
 
   computePlanetStatesAtArrival(
-    fromPlanet: PlanetInfo,
     toPlanet: PlanetInfo,
     toPlanetState: PlanetState,
-    timeTraveled = 0
+    duration: number
   ): {minPlanetState: PlanetState; maxPlanetState: PlanetState} {
-    const duration = this.timeToArrive(fromPlanet, toPlanet) - timeTraveled;
     return {
-      minPlanetState: this.computeFuturePlanetState(toPlanet, toPlanetState, duration),
-      maxPlanetState: this.computeFuturePlanetState(toPlanet, toPlanetState, duration + this.resolveWindow),
+      minPlanetState: this.computeFuturePlanetState(toPlanet, toPlanetState, Math.max(0, duration)),
+      maxPlanetState: this.computeFuturePlanetState(
+        toPlanet,
+        toPlanetState,
+        Math.max(0, duration + this.resolveWindow)
+      ),
     };
   }
 
   // TODO redo after travelingUpkeep update
   numSpaceshipsAtArrival(
-    fromPlanet: PlanetInfo,
     toPlanet: PlanetInfo,
     toPlanetState: PlanetState,
-    timeTraveled = 0
+    duration: number
   ): {min: number; max: number} {
     // console.log({timeTraveled});
-    const duration = this.timeToArrive(fromPlanet, toPlanet) - timeTraveled;
     return {
-      min: this.numSpaceshipsAfterDuration(toPlanet, toPlanetState, duration),
-      max: this.numSpaceshipsAfterDuration(toPlanet, toPlanetState, duration + this.resolveWindow),
+      min: this.numSpaceshipsAfterDuration(toPlanet, toPlanetState, Math.max(0, duration)),
+      max: this.numSpaceshipsAfterDuration(toPlanet, toPlanetState, Math.max(0, duration + this.resolveWindow)),
     };
   }
 
   outcome(
     fromPlanet: PlanetInfo,
-    fromPlanetState: PlanetState,
     toPlanet: PlanetInfo,
     toPlanetState: PlanetState,
     fleetAmount: number,
-    fleetLaunchTime: number,
-    timeTraveled: number,
+    duration: number,
     senderPlayer?: Player,
     fromPlayer?: Player,
     toPlayer?: Player,
@@ -603,12 +601,7 @@ export class SpaceInfo {
     specific?: string
   ): Outcome {
     // const {min, max} = this.numSpaceshipsAtArrival(fromPlanet, toPlanet, toPlanetState, timeTraveled);
-    const {minPlanetState, maxPlanetState} = this.computePlanetStatesAtArrival(
-      fromPlanet,
-      toPlanet,
-      toPlanetState,
-      timeTraveled
-    );
+    const {minPlanetState, maxPlanetState} = this.computePlanetStatesAtArrival(toPlanet, toPlanetState, duration);
 
     let nativeResistIfAttackFails = minPlanetState.natives;
     let min = minPlanetState.numSpaceships;
@@ -635,7 +628,7 @@ export class SpaceInfo {
         JSON.stringify(
           {
             min,
-            timeTraveled,
+            duration,
             toPlanetState,
           },
           null,
@@ -655,7 +648,7 @@ export class SpaceInfo {
         JSON.stringify(
           {
             max,
-            timeTraveled,
+            duration,
             toPlanetState,
           },
           null,
