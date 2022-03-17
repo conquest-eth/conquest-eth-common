@@ -598,7 +598,8 @@ export class SpaceInfo {
     fromPlayer?: Player,
     toPlayer?: Player,
     gift?: boolean,
-    specific?: string
+    specific?: string,
+    extra?: {defense: number; attackPowerOverride: number}
   ): Outcome {
     // const {min, max} = this.numSpaceshipsAtArrival(fromPlanet, toPlanet, toPlanetState, timeTraveled);
     const {minPlanetState, maxPlanetState} = this.computePlanetStatesAtArrival(toPlanet, toPlanetState, duration);
@@ -795,13 +796,21 @@ export class SpaceInfo {
       numSpaceshipsLeft: 0,
     };
 
-    const resultMin = this.combat(fromPlanet.stats.attack, numAttack, toPlanet.stats.defense, numDefenseMin);
+    const resultMin = this.combat(
+      extra ? extra.attackPowerOverride : fromPlanet.stats.attack,
+      numAttack,
+      toPlanet.stats.defense,
+      numDefenseMin.add(extra?.defense || 0)
+    );
     if (resultMin.attackerLoss.eq(numAttack)) {
       // TODO check numDefense winning on zeroes in smart contract
       minOutcome.captured = false;
       minOutcome.numSpaceshipsLeft = toPlanetState.natives
         ? toPlanet.stats.natives
-        : numDefenseMin.sub(resultMin.defenderLoss).toNumber();
+        : numDefenseMin
+            .add(extra?.defense || 0)
+            .sub(resultMin.defenderLoss)
+            .toNumber();
     } else {
       minOutcome.captured = true;
       minOutcome.numSpaceshipsLeft = numAttack.sub(resultMin.attackerLoss).toNumber();
