@@ -176,3 +176,16 @@ export function nextInSpiral<T>(pointer?: LocationPointer<T> | StrictLocationPoi
     data: undefined,
   };
 }
+
+export function coordFromLocation(location: string): string {
+  const loc = locationToXY(location);
+  return `${loc.x},${loc.y}`;
+}
+
+export function coordFromXY(x: number, y: number): string {
+  return `${x},${y}`;
+}
+
+export function coordFromXYObject(obj: {x: number; y: number}): string {
+  return `${obj.x},${obj.y}`;
+}
