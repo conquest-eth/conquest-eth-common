@@ -588,6 +588,39 @@ export class SpaceInfo {
     };
   }
 
+  durationToReachXSpaceships(
+    planet: PlanetInfo,
+    planetState: PlanetState,
+    numSpaceshipsToReach: number
+  ): {amount: number; duration: number} {
+    if (planetState.active) {
+      const numSpaceshipsSoFar = planetState.numSpaceships;
+
+      if (planet.stats.cap < numSpaceshipsToReach) {
+        numSpaceshipsToReach = planet.stats.cap;
+      }
+
+      if (numSpaceshipsSoFar >= numSpaceshipsToReach) {
+        return {
+          amount: 0,
+          duration: 0,
+        };
+      }
+
+      const numSpaceshipsToProduce = numSpaceshipsToReach - numSpaceshipsSoFar;
+      // Math.floor((timePassed * this.productionSpeedUp * production) / hours(1));
+      const duration = numSpaceshipsToProduce / ((planet.stats.production * this.productionSpeedUp) / hours(1));
+      return {
+        amount: numSpaceshipsToProduce,
+        duration,
+      };
+    }
+    return {
+      amount: 0,
+      duration: 0,
+    };
+  }
+
   outcome(
     fromPlanet: PlanetInfo,
     toPlanet: PlanetInfo,
