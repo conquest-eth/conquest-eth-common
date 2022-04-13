@@ -452,30 +452,28 @@ export class SpaceInfo {
       const cap = planetUpdate.active ? capWhenActive : 0;
 
       if (newNumSpaceships > cap) {
-        if (planetUpdate.startExitTime == 0) {
-          let decreaseRate = 1800;
-          if (planetUpdate.overflow > 0) {
-            decreaseRate = Math.floor((planetUpdate.overflow * 1800) / capWhenActive);
-            if (decreaseRate < 1800) {
-              decreaseRate = 1800;
-            }
+        let decreaseRate = 1800;
+        if (planetUpdate.overflow > 0) {
+          decreaseRate = Math.floor((planetUpdate.overflow * 1800) / capWhenActive);
+          if (decreaseRate < 1800) {
+            decreaseRate = 1800;
           }
+        }
 
-          let decrease = Math.floor((timePassed * this.productionSpeedUp * decreaseRate) / hours(1));
-          if (decrease > newNumSpaceships - cap) {
-            decrease = newNumSpaceships - cap;
+        let decrease = Math.floor((timePassed * this.productionSpeedUp * decreaseRate) / hours(1));
+        if (decrease > newNumSpaceships - cap) {
+          decrease = newNumSpaceships - cap;
+        }
+        if (decrease > newNumSpaceships) {
+          if (planetUpdate.active) {
+            extraUpkeepPaid = produce - upkeepRepaid + newNumSpaceships;
           }
-          if (decrease > newNumSpaceships) {
-            if (planetUpdate.active) {
-              extraUpkeepPaid = produce - upkeepRepaid + newNumSpaceships;
-            }
-            newNumSpaceships = 0;
-          } else {
-            if (planetUpdate.active) {
-              extraUpkeepPaid = produce - upkeepRepaid + decrease;
-            }
-            newNumSpaceships -= decrease;
+          newNumSpaceships = 0;
+        } else {
+          if (planetUpdate.active) {
+            extraUpkeepPaid = produce - upkeepRepaid + decrease;
           }
+          newNumSpaceships -= decrease;
         }
       } else {
         if (planetUpdate.active) {
