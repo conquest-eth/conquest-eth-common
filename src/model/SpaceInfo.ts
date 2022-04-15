@@ -430,12 +430,12 @@ export class SpaceInfo {
 
     const timePassed = t - planetUpdate.lastUpdatedSaved;
     const production = planetInfo.stats.production;
-    const produce = Math.floor((timePassed * this.productionSpeedUp * production) / hours(1));
+    const amountProducedTheWholeTime = Math.floor((timePassed * this.productionSpeedUp * production) / hours(1));
 
     // NOTE: the repaypemnt of upkeep always happen at a fixed rate (per planet), it is fully predictable
     let upkeepRepaid = 0;
     if (planetUpdate.travelingUpkeep > 0) {
-      upkeepRepaid = Math.floor((produce * this.upkeepProductionDecreaseRatePer10000th) / 10000);
+      upkeepRepaid = Math.floor((amountProducedTheWholeTime * this.upkeepProductionDecreaseRatePer10000th) / 10000);
       if (upkeepRepaid > planetUpdate.travelingUpkeep) {
         upkeepRepaid = planetUpdate.travelingUpkeep;
       }
@@ -464,21 +464,28 @@ export class SpaceInfo {
         if (decrease > newNumSpaceships - cap) {
           decrease = newNumSpaceships - cap;
         }
-        if (decrease > newNumSpaceships) {
-          if (planetUpdate.active) {
-            extraUpkeepPaid = produce - upkeepRepaid + newNumSpaceships;
-          }
-          newNumSpaceships = 0;
-        } else {
-          if (planetUpdate.active) {
-            extraUpkeepPaid = produce - upkeepRepaid + decrease;
-          }
-          newNumSpaceships -= decrease;
+        if (planetUpdate.active) {
+          extraUpkeepPaid = decrease;
         }
+        newNumSpaceships -= decrease;
       } else {
         if (planetUpdate.active) {
+          let increase = amountProducedTheWholeTime;
+          if (planetUpdate.travelingUpkeep > 0) {
+            const timeBeforeUpkeepBackToZero =
+              planetUpdate.travelingUpkeep /
+              ((this.productionSpeedUp * production * this.upkeepProductionDecreaseRatePer10000th) / hours(1) / 10000);
+            if (timeBeforeUpkeepBackToZero >= timePassed) {
+              extraUpkeepPaid = increase;
+            } else {
+              extraUpkeepPaid = (timeBeforeUpkeepBackToZero * this.productionSpeedUp * production) / hours(1);
+              if (extraUpkeepPaid > increase) {
+                extraUpkeepPaid = increase; // TODO remove ? should not be possible
+              }
+            }
+            increase -= extraUpkeepPaid;
+          }
           const maxIncrease = cap - newNumSpaceships;
-          let increase = produce - upkeepRepaid;
           if (increase > maxIncrease) {
             extraUpkeepPaid = increase - maxIncrease;
             increase = maxIncrease;
@@ -487,13 +494,20 @@ export class SpaceInfo {
         } else {
           // not effect currently, when inactive, cap == 0, meaning zero spaceship here
           // NOTE: we could do the following assuming we act on upkeepRepaid when inactive, we do not do that currently
-          //  extraUpkeepPaid = produce - upkeepRepaid;
+          //  extraUpkeepPaid = amountProducedTheWholeTime - upkeepRepaid;
         }
       }
 
       if (planetUpdate.active) {
-        // travelingUpkeep can go negative allow you to charge up your planet for later use, up to 7 days
-        let newTravelingUpkeep = planetUpdate.travelingUpkeep - extraUpkeepPaid;
+        // // travelingUpkeep can go negative allow you to charge up your planet for later use, up to 7 days
+        // let newTravelingUpkeep = planetUpdate.travelingUpkeep - extraUpkeepPaid;
+        const upkeepRepaid =
+          Math.floor((amountProducedTheWholeTime * this.upkeepProductionDecreaseRatePer10000th) / 10000) +
+          extraUpkeepPaid;
+
+        let newTravelingUpkeep = planetUpdate.travelingUpkeep - upkeepRepaid;
+        // console.log({newTravelingUpkeep, upkeepRepaid, travelingUpkeep: planetUpdate.travelingUpkeep});
+
         if (newTravelingUpkeep < -cap) {
           newTravelingUpkeep = -cap;
         }
@@ -501,7 +515,7 @@ export class SpaceInfo {
       }
     } else {
       if (planetUpdate.active) {
-        newNumSpaceships += Math.floor((timePassed * this.productionSpeedUp * production) / hours(1)) - upkeepRepaid;
+        newNumSpaceships += amountProducedTheWholeTime;
       } else {
         // NOTE no need to overflow here  as there is no production cap, so no incentive to regroup spaceships
         let decrease = Math.floor((timePassed * this.productionSpeedUp * 1800) / hours(1));
