@@ -40,6 +40,7 @@ export type PlanetState = {
   lastUpdatedSaved: number; // updated
   startExitTime: number;
   numSpaceships: number;
+  flagTime: number;
   travelingUpkeep: number;
   overflow: number;
   active: boolean;
