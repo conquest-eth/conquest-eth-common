@@ -879,8 +879,22 @@ export class SpaceInfo {
         ? toPlanet.stats.natives
         : numDefenseMax.sub(resultMax.defenderLoss).toNumber();
     } else {
-      maxOutcome.captured = true;
-      maxOutcome.numSpaceshipsLeft = numAttack.sub(resultMax.attackerLoss).toNumber();
+      try {
+        maxOutcome.captured = true;
+        maxOutcome.numSpaceshipsLeft = numAttack.sub(resultMax.attackerLoss).toNumber();
+      } catch (e) {
+        if (typeof window !== 'undefined' && (window as any).__SENTRY__ && (window as any).__SENTRY__.hub) {
+          try {
+            (window as any).__SENTRY__.hub.captureMessage({maxOutcome, numAttack, resultMax});
+          } catch (e) {
+            console.error(e);
+          }
+        }
+        // TODO
+        maxOutcome.captured = true;
+        maxOutcome.numSpaceshipsLeft = 0;
+        console.error(e);
+      }
     }
 
     let timeUntilFails = 0;
